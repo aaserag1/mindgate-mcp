@@ -1,217 +1,157 @@
-# 🧠 بوابة العقل (MindGate MCP)
+# 🧠 بوابة العقل — MindGate MCP (`v1.1.0`)
 
-**الذاكرة الموحدة والمرجع المركزي لوكلاء الذكاء الاصطناعي (Antigravity • OpenCode • Codex • Cursor • Claude)**
+[![CI](https://github.com/aaserag1/mindgate-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/aaserag1/mindgate-mcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
+[![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
+[![Version: 1.1.0](https://img.shields.io/badge/MCP-v1.1.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
-[English Documentation (README.md)](./README.md)
+**خادم ذاكرة محلي فائق السرعة ومحصّن أمنياً لوكلاء الذكاء الاصطناعي عبر بروتوكول سياق النموذج (MCP).**
 
-**بوابة العقل (MindGate)** هي خادم بروتوكول سياق النماذج (**MCP Server**) مفتوح المصدر، مجاني بالكامل (100% Local-First)، ومحصّن أمنياً ضد ثغرة **Node2Shell (CVE-2026-111497)**. يعمل كـ "عقل مشترك" وذاكرة دائمة تربط بين جميع أدوات البرمجة بالذكاء الاصطناعي على جهازك، بحيث تتذكر كل أداة قراراتك المعمارية، تفضيلاتك البرمجية، وآخر نقطة توقفت عندها في أي جلسة سابقة دون الحاجة لإعادة شرح مشروعك من الصفر.
+[🇬🇧 Read in English](./README.md)
 
-## 🌟 لماذا بوابة العقل (MindGate)؟
+---
 
-عند التنقل بين **Antigravity** و **OpenCode** و **Codex**، يفقد كل برنامج السياق الذي بنيته مع البرنامج الآخر. تحل **بوابة العقل** هذه المشكلة عبر توفير:
+## 💡 لماذا "بوابة العقل" (MindGate MCP)؟
 
-* **ذاكرة محلية مجانية 100% (Zero-Cost & Local-First):** تخزين كافة الذكريات والقرارات محلياً في قاعدة بيانات `SQLite` مع محرك البحث النصي الفوري `FTS5 (BM25)` على جهازك بدون أي اشتراكات سحابية أو مفاتيح API مدفوعة.
-* **تسليم السياق بين الوكلاء (Cross-Agent Handoff):** ابدأ تصميم المعمارية على Antigravity، وسجّل ملخص الجلسة، ثم افتح OpenCode أو Codex ليكمل كتابة الكود من نفس النقطة تلقائياً.
-* **عزل المشاريع مع ذاكرة عامة (Workspaces + Global Brain):** فصل ذكريات كل مشروع في مساحة عمل مستقلة (`workspace`)، مع الاحتفاظ بتفضيلاتك الشخصية وقواعد الكود النظيف (`Clean Code`) في ذاكرة عامة مشتركة.
-* **تحصين أمني مدمج ضد ثغرة Node2Shell (`CVE-2026-111497`):** يعمل حصرياً عبر قناة `stdio` المعزولة بدون فتح منافذ HTTP، ويفرض الإصدارات المرقّعة من Node.js، كما يعطّل دوال فك ضغط `Brotli` (`node:zlib`) برمجياً وقت التشغيل لحماية المستخدمين حتى على الأنظمة التي تستخدم مكتبات نظام غير محدّثة.
+يعاني مطورو البرمجيات عند استخدام وكلاء الذكاء الاصطناعي (مثل **Antigravity**، و**Cursor**، و**Claude Desktop**، و**Windsurf**، و**Cline**) من مشكلتين رئيسيتين:
 
-## 🏗️ الرسم المعماري للنظام (System Architecture)
+1. **فقدان الذاكرة بين الجلسات (Context Amnesia):** في كل جلسة جديدة، ينسى الوكيل المعمارية البرمجية، القرارات السابقة، تفضيلاتك في كتابة الكود، والأخطاء التي تم إصلاحها بالأمس.
+2. **ثغرات الحقن الموجه وتنفيذ الأوامر (`Node2Shell` / Prompt Injection):** خوادم MCP التقليدية قد تقوم بتخزين أو استرجاع نصوص ملغمة تؤدي عند قراءتها بواسطة الوكيل إلى تنفيذ أوامر خطيرة على جهاز المطور أو تسريب مفاتيح الأسرار (`API Keys` / `.env`).
 
-يوضح الرسم المعماري التالي كيف تعمل **بوابة العقل** كطبقة ذاكرة موحدة ومعزولة أمنياً بين مختلف برامج الذكاء الاصطناعي وقاعدة البيانات المحلية:
+**بوابة العقل (MindGate MCP)** تحل المشكلتين معاً في خادم محلي واحد (Zero-Cloud):
+- 🗄️ **ذاكرة محلية دائمة فائقة السرعة (SQLite + FTS5 BM25):** تخزين واسترجاع فوري للقرارات المعمارية، إصلاحات الأخطاء، تفضيلات المطور، وملخصات تسليم الجلسات (Session Handoffs).
+- 🔄 **توليد تلقائي لملفات قواعد المشروع (`AGENTS.md` / `.cursorrules` / `CLAUDE.md`) — جديد في `v1.1.0`:** يجمع قراراتك المعمارية وتفضيلاتك وإصلاحات الأخطاء في ملف قواعد موحد يقرأه أي وكيل تلقائياً فور فتح المشروع.
+- ✏️ **تحديث الذكريات في مكانها (`update_memory`) والنسخ الاحتياطي المحمول (`export_memory_snapshot`) — جديد في `v1.1.0`:** عدّل أي قرار معماري دون فقدان المعرّف (`ID`)، وصدّر أو استورد ذاكرة مشروعك بالكامل بضغطة واحدة.
+- 🛡️ **درع الحماية المدمج (Node2Shell Security Guard):** فحص تلقائي ثنائي الاتجاه يمنع تخزين المفاتيح السرية (AWS, OpenAI, GitHub, Private Keys) ويكشف محاولات الحقن الموجه وأوامر الـ Shell الخبيثة قبل وصولها إلى سياق النموذج.
 
-```mermaid
-flowchart TB
-    subgraph Agents["🤖 وكلاء وبرامج الذكاء الاصطناعي (AI Coding Agents)"]
-        direction LR
-        AG["🚀 Antigravity"]
-        OC["💻 OpenCode"]
-        CX["⚡ Codex CLI / IDE"]
-        OT["🔧 Cursor / Windsurf / Claude"]
-    end
+---
 
-    subgraph Transport["🔒 طبقة النقل المعزولة (Zero-HTTP Transport)"]
-        STDIO["JSON-RPC 2.0 over Stdio\n(بدون منافذ شبكة أو HTTP Body Parsing)"]
-    end
+## 🛠️ الأدوات المتاحة للوكيل (10 MCP Tools)
 
-    subgraph MindGate["🧠 بوابة العقل — MindGate MCP Server (TypeScript)"]
-        direction TB
-        GUARD["🛡️ درع الحماية Node2Shell Guard (CVE-2026-111497)\n• فحص إصدار Node.js (>=22.23.4 / >=24.22.1 / >=26.12.1)\n• قفل دوال فك ضغط Brotli (node:zlib) وقت التشغيل"]
-        
-        subgraph Tools["🛠️ أدوات البروتوكول (MCP Tools & Resources)"]
-            direction LR
-            T1["remember_decision\nحفظ القرارات المعمارية"]
-            T2["recall_context\nاسترجاع السياق والبحث"]
-            T3["log_session_summary\nتسليم الجلسة بين الأدوات"]
-            T4["user_preferences\nقواعد وتفضيلات المطور"]
-        end
-
-        ENGINE["⚙️ محرك السياق والبحث الدلالي/النصي\n(Context Router & Workspace Isolation)"]
-    end
-
-    subgraph Storage["💾 التخزين المحلي (`~/.mindgate/mindgate.db` - SQLite WAL)"]
-        direction LR
-        DB_MEM[("📌 جدول الذكريات\n(Memories Table)")]
-        DB_FTS[("🔍 فهرس البحث الفوري\n(FTS5 BM25 Index)")]
-        DB_SES[("🔄 سجل الجلسات\n(Session Handoffs)")]
-        DB_PREF[("⚙️ تفضيلات المطور\n(Global Preferences)")]
-    end
-
-    AG <--> STDIO
-    OC <--> STDIO
-    CX <--> STDIO
-    OT <--> STDIO
-    STDIO <--> GUARD
-    GUARD --> Tools
-    Tools --> ENGINE
-    ENGINE <--> DB_MEM
-    ENGINE <--> DB_FTS
-    ENGINE <--> DB_SES
-    ENGINE <--> DB_PREF
-```
-
-### مخطط تدفق البيانات النصي (ASCII Architecture Diagram)
-
-```text
-+-------------------+     +-------------------+     +-------------------+
-|    Antigravity    |     |     OpenCode      |     |       Codex       |
-+---------+---------+     +---------+---------+     +---------+---------+
-          |                         |                         |
-          +-------------------------+-------------------------+
-                                    |
-                     [ JSON-RPC 2.0 via Local STDIO ]
-                     (No HTTP Server / No Brotli I/O)
-                                    |
-                                    v
-+-----------------------------------------------------------------------+
-|                    MINDGATE MCP SERVER (بوابة العقل)                  |
-|                                                                       |
-|  +-----------------------------------------------------------------+  |
-|  | 1. Node2Shell Security Guard (CVE-2026-111497 Protection)       |  |
-|  |    - Validates Runtime Version (Node >=22.23.4 / 24.22.1 / 26)  |  |
-|  |    - Hard-Blocks node:zlib Brotli Decompression APIs            |  |
-|  +-----------------------------------------------------------------+  |
-|                                   |                                   |
-|                                   v                                   |
-|  +-----------------------------------------------------------------+  |
-|  | 2. MCP Tool & Resource Router                                   |  |
-|  |    - remember_decision()       - log_session_summary()          |  |
-|  |    - recall_context()          - set/get_user_preferences()     |  |
-|  |    - list_workspaces()         - delete_memory()                |  |
-|  +-----------------------------------------------------------------+  |
-|                                   |                                   |
-|                                   v                                   |
-|  +-----------------------------------------------------------------+  |
-|  | 3. Local SQLite Engine (~/.mindgate/mindgate.db - WAL Mode)     |  |
-|  |    [Memories] + [FTS5 BM25 Search] + [Sessions] + [Preferences] |  |
-|  +-----------------------------------------------------------------+  |
-+-----------------------------------------------------------------------+
-```
-
-## 🛡️ الحماية ضد ثغرة Node2Shell (CVE-2026-111497)
-
-تُعد ثغرة **Node2Shell (`CVE-2026-111497`)** ثغرة كتابة خارج حدود الذاكرة (Out-of-bounds write - `CWE-787`) في مفكك ضغط `Brotli` المدمج في Node.js ومكتبات النظام. صُممت **بوابة العقل** بـ 4 طبقات دفاعية متتالية (Defense-in-Depth):
-
-| طبقة الحماية | كيف تطبقها بوابة العقل (MindGate)؟ |
+| الأداة (Tool) | الوظيفة الأساسية |
 | :--- | :--- |
-| **1. انعدام سطح الهجوم الشبكي (`stdio`)** | لا يفتح الخادم أي منفذ HTTP ولا يستخدم `Express` أو `body-parser` أو `fetch()` خارجي، مما يمنع وصول أي حزم `Content-Encoding: br` خارجية. |
-| **2. قيود المحرك الصارمة (`package.json`)** | يفرض الحقل `engines` استخدام إصدارات Node.js المرقّعة رسمياً فقط: `^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1` أو Bun `>=1.4.4`. |
-| **3. فحص الإصدار وقت التشغيل (`Runtime Check`)** | يتحقق الدرع الأمني في `src/security/node2shellGuard.ts` من إصدار Node.js فور التشغيل وينبّه المطور إذا كان يستخدم إصداراً قديماً أو منتهي الدعم (مثل Node 20). |
-| **4. تعطيل مفكك Brotli برمجياً (`Zlib Lock`)** | يقوم الخادم بتجميد وتعطيل دوال `zlib.createBrotliDecompress` و `zlib.brotliDecompress` داخل العملية لحماية الأنظمة التي تعتمد على حزم `libbrotli` مشتركة غير محدّثة في نظام التشغيل. |
+| `store_memory` | حفظ معلومة أو قرار معماري أو حل لمشكلة برمجية مع فحص أمني وتعتيم تلقائي للأسرار |
+| `update_memory` | **[جديد v1.1]** تحديث ذكريات أو قرارات سابقة في مكانها مع الحفاظ على المعرّف (`ID`) ومزامنة فهرس البحث `FTS5` |
+| `recall_memory` | بحث ذكي وسريع (`FTS5 BM25`) في ذاكرة الوكيل مع تصفية حسب المشروع أو التصنيف أو الأهمية |
+| `delete_memory` | حذف ذاكرة محددة بواسطة المعرّف (`id`) عند انتهاء صلاحيتها |
+| `save_session_handoff` | حفظ ملخص الجلسة الحالية (ما تم إنجازه، المعوقات، والخطوات القادمة) لاستكماله لاحقاً |
+| `get_project_context` | استرجاع شامل لسياق المشروع (أهم الذكريات + آخر 3 جلسات + تفضيلات المطور) بضغطة واحدة |
+| `sync_workspace_rules` | **[جديد v1.1]** توليد أو تحديث ملف `AGENTS.md` (أو `.cursorrules` / `CLAUDE.md`) تلقائياً من ذاكرة المشروع |
+| `export_memory_snapshot` | **[جديد v1.1]** تصدير نسخة احتياطية كاملة (`JSON`) من الذكريات والجلسات والتفضيلات لنقلها أو أرشفتها |
+| `set_preference` | حفظ تفضيل دائم للمطور (مثل: `language=ar`, `package_manager=pnpm`) |
+| `security_audit_text` | فحص أي نص أو أمر برمجي ضد ثغرات `Node2Shell` وتسرّب الأسرار قبل تنفيذه |
 
-## 🛠️ الأدوات المتاحة لوكلاء الذكاء الاصطناعي (MCP Tools)
+---
 
-بمجرد ربط **بوابة العقل** بأي برنامج، يحصل الذكاء الاصطناعي تلقائياً على الأدوات التالية:
+## 📦 الموارد والقوالب الذكية (MCP Resources & Prompts)
 
-| اسم الأداة | الوظيفة | متى يستخدمها الذكاء الاصطناعي؟ |
-| :--- | :--- | :--- |
-| `remember_decision` | حفظ قرار معماري، قاعدة كود، أو سبب إصلاح خطأ (Bugfix) مع وسوم (`tags`) ومساحة عمل (`workspace`). | عندما تتخذ قراراً مهماً في المشروع وتريد من كل الأدوات تذكره دائماً. |
-| `recall_context` | بحث فوري عبر `FTS5 BM25` في الذكريات السابقة، القرارات، وملخص آخر جلسة عمل. | في بداية أي محادثة جديدة أو قبل تعديل ملفات حساسة في المشروع. |
-| `log_session_summary` | تسجيل ملخص ما تم إنجازه، الملفات المعدّلة، والخطوات المتبقية (`next_steps`). | عند انتهاء جلستك على Antigravity مثلاً قبل الانتقال إلى OpenCode أو Codex. |
-| `set_user_preference` | حفظ تفضيل برمجي عام للمطور (مثل: اللغات المفضلة، أسلوب التسمية، المكتبات الممنوعة). | عندما تخبر المساعد بتفضيل عام يسري على كل مشاريعك. |
-| `get_user_preferences` | جلب كافة تفضيلات المطور الشخصية وقواعده العامة. | عند بدء مشروع جديد لكتابة كود يطابق أسلوبك الشخصي. |
-| `list_workspaces` | عرض جميع مساحات العمل (المشاريع) المسجلة وإحصائيات الذكريات في كل منها. | لاستكشاف المشاريع المحفوظة في بوابة العقل. |
-| `delete_memory` | حذف ذاكرة قديمة أو قرار تم التراجع عنه بواسطة المعرّف (`id`). | عند تحديث معمارية المشروع وإلغاء قرار قديم. |
+### الموارد (Resources)
+- `mindgate://stats`: إحصائيات فورية لقاعدة بيانات الذاكرة (عدد الذكريات، الجلسات، التفضيلات، وتوزيع التصنيفات).
+- `mindgate://security/policy`: وثيقة سياسة الحماية النشطة لدرع `Node2Shell`.
+- `mindgate://rules/agents-md`: **[جديد v1.1]** معاينة حية لملف قواعد الوكلاء (`AGENTS.md`) المولّد تلقائياً من ذاكرة المشروع.
 
-## 🚀 التثبيت السريع والإعداد (Quick Start)
+### القوالب التوجيهية (Prompts)
+- `bootstrap_session`: قالب جاهز لبدء جلسة برمجية جديدة واسترجاع سياق المشروع فوراً.
+- `handoff_session`: قالب جاهز لتلخيص الجلسة الحالية وحفظها قبل الإغلاق.
 
-### 1. المتطلبات الأساسية
-* إصدار **Node.js** محدث وآمن (`v22.23.4+` أو `v24.22.1+` أو `v26.12.1+`).
+---
 
-### 2. تحميل وتشغيل المشروع محلياً
+## 🚀 التثبيت والتشغيل السريع
+
+### الطريقة الأولى: التشغيل المباشر عبر `npx` (بعد النشر على npm)
 
 ```bash
-git clone https://github.com/your-username/mindgate-mcp.git
+npx -y mindgate-mcp --init
+```
+
+### الطريقة الثانية: التشغيل من المصدر (موصى به للتطوير المحلي على Windows / macOS / Linux)
+
+```bash
+# 1. استنساخ المستودع
+git clone https://github.com/aaserag1/mindgate-mcp.git
 cd mindgate-mcp
+
+# 2. تثبيت الحزم البرمجية
 npm install
+
+# 3. بناء المشروع
 npm run build
+
+# 4. طباعة إعدادات الربط الجاهزة لـ Antigravity / Claude / Cursor
+npm run init-config
 ```
 
-لعرض إعدادات الربط الجاهزة لكل البرامج في الطرفية:
+---
 
-```bash
-node dist/index.js init
-```
+## ⚙️ إعدادات الربط مع الوكلاء (Configuration)
 
-## 🔌 طريقة الربط مع برامج الذكاء الاصطناعي
+### 1. الربط على نظام Windows (Antigravity / Cursor / Claude Desktop)
 
-### 1. الربط مع Antigravity / Claude Desktop / Cursor
-أضف الإعداد التالي داخل ملف إعدادات `mcpServers` الخاص بالبرنامج (أو عبر النشر على npm واستخدام `npx -y mindgate-mcp`):
+إذا كنت تشغل السيرفر محلياً على **Windows**، أضف هذا الإعداد في ملف `mcp_config.json`:
 
 ```json
 {
   "mcpServers": {
     "mindgate": {
       "command": "node",
-      "args": ["/absolute/path/to/mindgate-mcp/dist/index.js"],
+      "args": ["C:\\path\\to\\mindgate-mcp\\dist\\index.js"],
       "env": {
-        "MINDGATE_DEFAULT_WORKSPACE": "my-project"
+        "MINDGATE_DB_DIR": "C:\\Users\\YOUR_USER\\.mindgate-mcp"
       }
     }
   }
 }
 ```
 
-### 2. الربط مع OpenCode (`opencode.json`)
-أضف البوابة في ملف `~/.config/opencode/opencode.json` أو ملف `opencode.json` داخل مشروعك:
+### 2. الربط عبر `npx` (سطر واحد لجميع الأنظمة)
 
 ```json
 {
-  "mcp": {
+  "mcpServers": {
     "mindgate": {
-      "type": "local",
-      "command": ["node", "/absolute/path/to/mindgate-mcp/dist/index.js"],
-      "enabled": true
+      "command": "npx",
+      "args": ["-y", "mindgate-mcp"]
     }
   }
 }
 ```
 
-### 3. الربط مع Codex CLI (`~/.codex/config.toml`)
-أضف القسم التالي في ملف إعدادات Codex:
+### 3. الربط على macOS / Linux
 
-```toml
-[mcp_servers.mindgate]
-command = "node"
-args = ["/absolute/path/to/mindgate-mcp/dist/index.js"]
+```json
+{
+  "mcpServers": {
+    "mindgate": {
+      "command": "node",
+      "args": ["/absolute/path/to/mindgate-mcp/dist/index.js"]
+    }
+  }
+}
 ```
 
-## 📂 هيكل المشروع (Project Structure)
+---
 
-```text
-mindgate-mcp/
-├── package.json                  # إعدادات الحزمة وقيود الحماية ضد Node2Shell
-├── tsconfig.json                 # إعدادات مترجم TypeScript
-├── README.ar.md                  # التوثيق الكامل باللغة العربية مع الرسم المعماري
-├── README.md                     # التوثيق الكامل باللغة الإنجليزية مع الرسم المعماري
-├── LICENSE                       # رخصة المصدر المفتوح MIT
-└── src/
-    ├── index.ts                  # نقطة الدخول الرئيسية لخادم MCP وأدوات CLI
-    ├── security/
-    │   └── node2shellGuard.ts    # درع الحماية ضد ثغرة CVE-2026-111497 (Node2Shell)
-    └── db/
-        └── memoryStore.ts        # محرك قاعدة بيانات SQLite + البحث النصي FTS5
+## 🛡️ كيف يعمل درع الحماية (Node2Shell Guard)؟
+
+يحتوي الخادم على طبقة فحص أمني مستقلة (`src/security/node2shellGuard.ts`) تعمل في 3 مستويات:
+1. **منع تنفيذ الأوامر التلقائي (Anti-RCE):** يرفض أي نص يحتوي على أنماط مثل `curl ... | bash`، أو `child_process.exec`، أو استدعاءات `nc -e /bin/sh`، أو أوامر `rm -rf /`.
+2. **كشف الحقن الموجه (Anti-Prompt Injection):** يحبط محاولات التلاعب بسياق النموذج مثل `Ignore all previous instructions`.
+3. **التعتيم التلقائي للأسرار (Auto-Secret Redaction):** يقوم بتحويل مفاتيح `sk-...` و `ghp_...` و `AKIA...` ورموز `JWT` تلقائياً إلى `[REDACTED:...]` قبل كتابتها على القرص الصلب.
+
+---
+
+## 🧪 تشغيل الاختبارات وفحص الكود
+
+```bash
+# فحص الأنواع البرمجية (TypeScript)
+npm run typecheck
+
+# بناء المشروع وتشغيل الاختبارات الشاملة
+npm test
 ```
 
-## 🤝 المساهمة في المشروع (Contributing)
+---
 
-هذا المشروع مفتوح المصدر بالكامل للمجتمع العربي والعالمي تحت رخصة **MIT License**. نرحب بجميع المساهمات (Pull Requests) لإضافة مزايا جديدة مثل لوحة تحكم محلية (Web UI) أو دعم البحث الدلالي المحلي عبر `Transformers.js`.
+## 📄 الرخصة (License)
+
+مرخّص بموجب رخصة [MIT](./LICENSE) — مفتوح المصدر بالكامل ومجاني للاستخدام الشخصي والتجاري.
