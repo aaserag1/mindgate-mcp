@@ -29,6 +29,54 @@
 
 ---
 
+## 🏛️ المعمارية — كيف يعمل البرنامج
+
+```mermaid
+flowchart TB
+    subgraph Clients["MCP Clients (أي عميل يدعم البروتوكول)"]
+        A1["Antigravity"]
+        A2["Cursor"]
+        A3["Claude Desktop"]
+        A4["OpenCode / Codex / Windsurf"]
+    end
+
+    subgraph Server["MindGate MCP Server — محلي 100%"]
+        direction TB
+        BOOT["1 · security/bootstrap.ts — أول ملف يُحمّل<br/>يقفل واجهة node:zlib Brotli<br/>+ فحص إصدار Node/Bun (CVE-2026-111497)"]
+        TOOLS["2 · index.ts — معالجات MCP<br/>10 أدوات · 2 موارد · قالب واحد<br/>stdio JSON-RPC فقط"]
+        VALID["3 · validation.ts<br/>فحص الأنواع والحدود والأحجام<br/>إدخال غير صالح → isError: true"]
+        REDACT["4 · security/secretRedactor.ts<br/>sk-…, AKIA…, JWT, PEM ← [REDACTED:kind]"]
+        STORE["5 · db/memoryStore.ts<br/>SQLite (WAL) + FTS5 BM25<br/>triggers تحافظ على المزامنة تلقائيًا"]
+        RULES["6 · rulesSync.ts<br/>كتابة ذرّية + نسخة .bak احتياطية<br/>الملفات المكتوبة يدويًا محمية (sentinel)"]
+        BOOT --> TOOLS
+        TOOLS --> VALID
+        VALID --> REDACT
+        REDACT --> STORE
+        VALID --> RULES
+        STORE --> RULES
+    end
+
+    DB[("نظام الملفات المحلي<br/>~/.mindgate/mindgate.db<br/>الملف chmod 600 · المجلد chmod 700")]
+    PROJ["مجلد المشروع<br/>AGENTS.md · CLAUDE.md · .cursorrules"]
+
+    Clients <-->|"stdio JSON-RPC فقط<br/>لا شبكة · لا HTTP"| BOOT
+    STORE <--> DB
+    RULES -->|"write / backup"| PROJ
+```
+
+**رحلة الطلب (مرقّمة كما في الرسم):**
+
+1. أي عميل MCP يشغّل `mindgate-mcp` كعملية فرعية، وكل التواصل يتم عبر **stdio** (JSON-RPC بسطر واحد لكل رسالة) — لا منافذ شبكة، لا HTTP، لا telemetry.
+2. أول ملف يُقيَّم هو `src/security/bootstrap.ts` (يُستورد قبل كل شيء): يقفل واجهة فك ضغط Brotli العامة في `node:zlib`، ويفحص إصدار Node/Bun مقابل الإصدارات المُصلحة من CVE-2026-111497.
+3. كل استدعاء أداة يُفحص في وقت التشغيل — الأنواع، المديات، حدود الأحجام، المعرفات الموجبة. أي إدخال غير صالح يرجع خطأ أداة (`isError: true`) برسالة وصفية، ولا يمكن أن يسبب crash.
+4. في مسارات الكتابة (الحفظ / التحديث / تسليم الجلسة / التفضيلات)، تُعمى الأسرار **قبل** أن تلمس القرص.
+5. التخزين SQLite + FTS5 مضمّن (`better-sqlite3`) في `~/.mindgate/mindgate.db` — وضع WAL وصلاحيات للمالك فقط. وtriggers تحافظ على تزامن فهرس FTS تلقائيًا عند الإضافة/التحديث/الحذف.
+6. أداة `sync_workspace_rules` تحوّل الذكريات إلى Markdown وتكتبها بشكل ذرّي (ملف مؤقت + rename) مع نسخة احتياطية بختم زمني (`.bak-<timestamp>`)؛ وأي ملف لا يحمل العلامة `<!-- mindgate:auto-generated -->` لا يُستبدل إلا بمعامل `force: true`.
+
+> حدود الثقة: الذكريات **بيانات وليست تعليمات**؛ تعتيم الأسرار أفضل-جهدي ويعتمد على الأنماط المعروفة؛ قفل Brotli خط دفاع إضافي. التفاصيل الكاملة في [SECURITY.md](./SECURITY.md).
+
+---
+
 ## 🛠️ الأدوات المتاحة للوكيل (10 أدوات)
 
 | الأداة (Tool) | الوظيفة الأساسية |

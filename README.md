@@ -29,6 +29,54 @@ AI coding and workflow agents (**Antigravity**, **Cursor**, **Claude Desktop**, 
 
 ---
 
+## 🏛️ Architecture — How MindGate Works
+
+```mermaid
+flowchart TB
+    subgraph Clients["MCP Clients (any of them)"]
+        A1["Antigravity"]
+        A2["Cursor"]
+        A3["Claude Desktop"]
+        A4["OpenCode / Codex / Windsurf"]
+    end
+
+    subgraph Server["MindGate MCP Server — 100% local"]
+        direction TB
+        BOOT["1 · security/bootstrap.ts — first import<br/>locks the node:zlib Brotli API<br/>+ runtime version check (CVE-2026-111497)"]
+        TOOLS["2 · index.ts — MCP handlers<br/>10 tools · 2 resources · 1 prompt<br/>stdio JSON-RPC only"]
+        VALID["3 · validation.ts<br/>type + range + size limits<br/>invalid input → isError: true"]
+        REDACT["4 · security/secretRedactor.ts<br/>sk-…, AKIA…, JWT, PEM → [REDACTED:kind]"]
+        STORE["5 · db/memoryStore.ts<br/>SQLite (WAL) + FTS5 BM25<br/>triggers keep the index in sync"]
+        RULES["6 · rulesSync.ts<br/>atomic write + .bak backup<br/>hand-written files protected (sentinel)"]
+        BOOT --> TOOLS
+        TOOLS --> VALID
+        VALID --> REDACT
+        REDACT --> STORE
+        VALID --> RULES
+        STORE --> RULES
+    end
+
+    DB[("Local filesystem<br/>~/.mindgate/mindgate.db<br/>file chmod 600 · dir chmod 700")]
+    PROJ["Project workspace<br/>AGENTS.md · CLAUDE.md · .cursorrules"]
+
+    Clients <-->|"stdio JSON-RPC only<br/>no network · no HTTP"| BOOT
+    STORE <--> DB
+    RULES -->|"write / backup"| PROJ
+```
+
+**Request lifecycle (numbered as in the diagram):**
+
+1. Any MCP client spawns `mindgate-mcp` as a child process. All communication is newline-delimited JSON-RPC over **stdio** — no sockets, no HTTP, no telemetry.
+2. The first module evaluated is `src/security/bootstrap.ts` (imported before everything else): it hard-locks the public `node:zlib` Brotli decompression API and checks the Node/Bun version against the patched releases for CVE-2026-111497.
+3. Every tool call is validated at runtime — types, ranges, size limits, positive IDs. Invalid input returns an MCP tool error (`isError: true`) with a descriptive message, never a crash.
+4. On write paths (remember / update / session handoff / preferences), secrets are redacted **before** anything touches disk.
+5. Storage is embedded SQLite + FTS5 (`better-sqlite3`) at `~/.mindgate/mindgate.db` — WAL mode, owner-only permissions. Insert/update/delete triggers keep the FTS index in sync automatically.
+6. `sync_workspace_rules` compiles memories → Markdown and writes it atomically (temp file + rename) with a timestamped `.bak-<timestamp>` backup; files without the `<!-- mindgate:auto-generated -->` marker are never overwritten unless `force: true`.
+
+> Trust boundaries: memories are **data, not instructions**; secret redaction is best-effort pattern matching; the Brotli lock is defense-in-depth. See [SECURITY.md](./SECURITY.md) for the full threat model.
+
+---
+
 ## 🛠️ MCP Tools Included (10 Tools)
 
 | Tool Name | Description |
