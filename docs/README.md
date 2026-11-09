@@ -1,6 +1,6 @@
 # 🧠 MindGate MCP — Launch Kit
 
-Everything needed to announce **v1.2.0** of MindGate MCP (بوابة العقل). This folder is deployed as the project landing page via GitHub Pages (see `.github/workflows/deploy-pages.yml`).
+Everything needed to announce **v1.2.0** of MindGate MCP (بوابة العقل). This folder (`docs/`) is deployed as the project landing page via GitHub Pages using **Settings → Pages → Source: Deploy from a branch → main → /docs** — no GitHub Actions required.
 
 | File / Folder | What it is |
 | :--- | :--- |
@@ -13,20 +13,20 @@ Everything needed to announce **v1.2.0** of MindGate MCP (بوابة العقل)
 ## Preview locally
 
 ```bash
-cd launch-kit
+cd docs
 python3 -m http.server 8080
 # open http://localhost:8080
 ```
 
 The EN/AR toggle persists your choice in `localStorage` and flips layout direction (`dir="rtl"`) for Arabic.
 
-## Enable GitHub Pages (one click after merge)
+## Enable GitHub Pages (branch-sourced — works without Actions)
 
-The workflow at `.github/workflows/deploy-pages.yml` publishes this folder to Pages on every push to `main`. Enable it once in the repo:
+GitHub's branch-sourced Pages only serves `/` (root) or `/docs`, which is why this folder is named `docs/`. Enable it once in the repo:
 
-**Settings → Pages → Build and deployment → Source: GitHub Actions.**
+**Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main` / `docs` → Save.**
 
-Then the landing page lives at `https://aaserag1.github.io/mindgate-mcp/` forever — no sandbox needed.
+Then the landing page lives at `https://aaserag1.github.io/mindgate-mcp/` forever — no sandbox, no GitHub Actions, and no billing-lock dependency. ⚠️ Note: with `/docs` as the Pages source, anything in this folder (including the video and markdown posts) also becomes publicly reachable at `/docs/...` paths — the repo is public anyway.
 
 ## Generating / regenerating the video
 
