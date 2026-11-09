@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MindGate MCP (بوابة العقل) — Your AI agents finally remember</title>
+<meta name="description" content="Local-first, persistent memory for AI coding agents. One shared SQLite memory for Antigravity, Cursor, Claude, OpenCode, Codex and Windsurf — via MCP. MIT licensed, zero cloud, zero network." />
+<meta property="og:title" content="MindGate MCP — Your AI agents finally remember" />
+<meta property="og:description" content="Local-first persistent memory gateway for AI agents. SQLite + FTS5, secret redaction, auto-compiled AGENTS.md. MIT licensed." />
+<meta property="og:image" content="assets/og-image.jpg" />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#0b1020" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1020'/%3E%3Cpath d='M9 26V13l7-7 7 7v13' fill='none' stroke='%2322d3ee' stroke-width='2.2' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='18' r='2.4' fill='%238b5cf6'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Kufi+Arabic:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #0b1020;
+  --bg-soft: #10162e;
+  --panel: rgba(23, 30, 58, 0.55);
+  --panel-solid: #141b36;
+  --line: rgba(139, 163, 255, 0.14);
+  --line-strong: rgba(139, 163, 255, 0.28);
+  --text: #e8ecf8;
+  --muted: #9aa5c7;
+  --cyan: #22d3ee;
+  --violet: #8b5cf6;
+  --emerald: #34d399;
+  --grad: linear-gradient(120deg, #22d3ee, #8b5cf6);
+  --radius: 18px;
+  --maxw: 1180px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', 'Noto Kufi Arabic', system-ui, -apple-system, sans-serif; line-height: 1.6; overflow-x: hidden; }
+[lang="ar"] body, html[dir="rtl"] body { font-family: 'Noto Kufi Arabic', 'Inter', system-ui, sans-serif; }
+::selection { background: rgba(139, 92, 246, 0.4); }
+.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.container { max-width: var(--maxw); margin-inline: auto; padding-inline: 24px; }
+
+.ambient { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(900px 500px at 85% -10%, rgba(139, 92, 246, 0.22), transparent 60%), radial-gradient(800px 600px at -10% 20%, rgba(34, 211, 238, 0.14), transparent 55%), radial-gradient(700px 700px at 50% 110%, rgba(52, 211, 153, 0.10), transparent 60%); }
+.grid-overlay { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.5; background-image: linear-gradient(rgba(139, 163, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(139, 163, 255, 0.05) 1px, transparent 1px); background-size: 44px 44px; mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 40%, transparent 75%); -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 40%, transparent 75%); }
+
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(11, 16, 32, 0.75); border-bottom: 1px solid transparent; transition: border-color .3s, box-shadow .3s; }
+nav.scrolled { border-bottom-color: var(--line); box-shadow: 0 8px 40px rgba(0,0,0,.35); }
+.nav-inner { max-width: var(--maxw); margin-inline: auto; padding: 14px 24px; display: flex; align-items: center; gap: 22px; }
+.logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); }
+.logo-mark { width: 38px; height: 38px; flex: none; }
+.logo-text { font-weight: 800; font-size: 1.12rem; letter-spacing: -0.02em; }
+.logo-text small { display: block; font-weight: 500; font-size: 0.66rem; color: var(--muted); letter-spacing: 0.06em; }
+.nav-links { display: flex; gap: 20px; margin-inline-start: auto; align-items: center; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 0.86rem; font-weight: 500; transition: color .2s; }
+.nav-links a:hover { color: var(--cyan); }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; border-radius: 12px; padding: 10px 18px; font-size: 0.86rem; font-weight: 700; text-decoration: none; transition: transform .15s, box-shadow .2s, background .2s; font-family: inherit; }
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn-primary { background: var(--grad); color: #0b1020; box-shadow: 0 6px 30px rgba(94, 199, 255, 0.28); }
+.btn-primary:hover { box-shadow: 0 8px 36px rgba(139, 92, 246, 0.4); transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line-strong); }
+.btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+.lang-toggle { background: var(--panel-solid); border: 1px solid var(--line-strong); color: var(--text); border-radius: 10px; padding: 8px 14px; cursor: pointer; font-size: 0.82rem; font-weight: 700; font-family: 'Noto Kufi Arabic', Inter, sans-serif; }
+.lang-toggle:hover { border-color: var(--violet); }
+
+.hero { max-width: var(--maxw); margin-inline: auto; padding: 64px 24px 40px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; position: relative; }
+.badge { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(34, 211, 238, 0.06); font-size: 0.75rem; color: #a5f3fc; font-weight: 600; margin-bottom: 22px; }
+.badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 10px var(--emerald); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }
+h1 { font-size: clamp(2.3rem, 4.6vw, 3.6rem); line-height: 1.08; letter-spacing: -0.035em; font-weight: 800; }
+.grad-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p.lead { margin-top: 20px; font-size: 1.08rem; color: #c4cce8; max-width: 34ch; }
+[dir="rtl"] .hero p.lead { max-width: none; }
+.hero-cta { display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap; align-items: center; }
+.cmd { display: inline-flex; align-items: center; gap: 12px; background: #05070f; border: 1px solid var(--line-strong); border-radius: 12px; padding: 12px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #7ff0ff; }
+.cmd .dollar { color: var(--violet); user-select: none; }
+.copy-btn { background: rgba(139, 163, 255, 0.1); border: 1px solid var(--line-strong); color: var(--muted); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 0.72rem; font-family: Inter, sans-serif; }
+.copy-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+.hero-note { margin-top: 18px; font-size: 0.75rem; color: var(--muted); }
+.hero-note b { color: var(--emerald); }
+
+.terminal { background: #05070f; border: 1px solid var(--line-strong); border-radius: var(--radius); box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(34,211,238,.05) inset, 0 0 80px rgba(139,92,246,.12); overflow: hidden; transform: perspective(1200px) rotateY(-4deg) rotateX(2deg); }
+[dir="rtl"] .terminal { transform: perspective(1200px) rotateY(4deg) rotateX(2deg); }
+.term-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(255,255,255,.03); border-bottom: 1px solid var(--line); }
+.tdot { width: 11px; height: 11px; border-radius: 50%; }
+.tdot.r { background: #ff5f57 } .tdot.y { background: #febc2e } .tdot.g { background: #28c840 }
+.term-title { margin-inline-start: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); }
+.term-body { padding: 18px 18px 22px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; min-height: 300px; }
+.tline { white-space: pre-wrap; word-break: break-word; margin-bottom: 7px; line-height: 1.55; }
+.t-agent { color: #93c5fd; } .t-tool { color: #c4b5fd; } .t-ok { color: var(--emerald); } .t-dim { color: #5b6687; } .t-str { color: #a7f3d0; }
+
+.stats { max-width: var(--maxw); margin: 10px auto 0; padding: 18px 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat { text-align: center; padding: 14px 8px; border: 1px solid var(--line); border-radius: 14px; background: rgba(23, 30, 58, 0.35); }
+.stat b { font-size: 1.5rem; letter-spacing: -0.02em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stat span { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+section.block { max-width: var(--maxw); margin-inline: auto; padding: 70px 24px 10px; }
+.kicker { font-size: 0.72rem; letter-spacing: .22em; text-transform: uppercase; color: var(--cyan); font-weight: 700; margin-bottom: 12px; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); letter-spacing: -0.03em; font-weight: 800; line-height: 1.15; }
+.sub { margin-top: 12px; color: var(--muted); max-width: 62ch; }
+
+.clients-strip { max-width: var(--maxw); margin: 34px auto 0; padding: 0 24px; text-align: center; }
+.clients-strip small { font-size: 0.72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 12px; }
+.chip-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.chip { border: 1px solid var(--line-strong); border-radius: 999px; padding: 7px 18px; font-size: 0.82rem; color: #c4cce8; background: rgba(23, 30, 58, 0.4); font-weight: 600; }
+
+.cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; }
+.card { border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; background: var(--panel); backdrop-filter: blur(6px); transition: transform .25s, border-color .25s, box-shadow .25s; }
+.card:hover { transform: translateY(-4px); border-color: var(--line-strong); box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+.card h3 { font-size: 1.02rem; margin: 14px 0 8px; letter-spacing: -0.01em; }
+.card p { font-size: 0.88rem; color: var(--muted); }
+.icon-badge { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.25); }
+
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; }
+.feature { border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; background: linear-gradient(160deg, rgba(23,30,58,.6), rgba(15,20,42,.35)); position: relative; overflow: hidden; }
+.feature::after { content: ""; position: absolute; top: 0; inset-inline-start: 0; width: 3px; height: 100%; background: var(--grad); opacity: .7; }
+.feature h3 { font-size: 0.98rem; margin-bottom: 8px; }
+.feature p { font-size: 0.86rem; color: var(--muted); }
+.feature small { display: inline-block; margin-top: 12px; font-size: 0.72rem; color: var(--violet); font-weight: 700; letter-spacing: .04em; }
+
+.arch { margin-top: 38px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(13, 18, 39, 0.7); overflow: hidden; }
+.arch-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: rgba(23,30,58,.4); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--muted); }
+.arch ol { list-style: none; padding: 8px 0; }
+.step { display: grid; grid-template-columns: 46px 1fr; gap: 16px; padding: 13px 22px; align-items: baseline; border-top: 1px dashed rgba(139,163,255,.1); }
+.step:first-child { border-top: none; }
+.step-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: transparent; background: var(--grad); -webkit-background-clip: text; background-clip: text; font-size: 1rem; }
+.step b { font-size: 0.9rem; color: #e8ecf8; }
+.step p { font-size: 0.8rem; color: var(--muted); margin-top: 1px; }
+.step code { font-size: 0.72rem; background: rgba(139,92,246,.12); color: #c4b5fd; border-radius: 6px; padding: 1px 6px; font-family: 'JetBrains Mono', monospace; }
+.trust-note { margin-top: 16px; font-size: 0.78rem; color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.06); border-radius: 12px; padding: 12px 16px; }
+
+.tools-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 36px; }
+.tool { border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 12px; background: rgba(23,30,58,.35); transition: border-color .2s, transform .2s; }
+.tool:hover { border-color: var(--violet); transform: translateY(-2px); }
+.tool code { font-size: 0.68rem; color: #7ff0ff; font-family: 'JetBrains Mono', monospace; word-break: break-all; }
+.tool span { display: block; margin-top: 6px; font-size: 0.68rem; color: var(--muted); line-height: 1.45; }
+
+.install { margin-top: 38px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: #05070f; overflow: hidden; }
+.tabs { display: flex; gap: 4px; padding: 12px 12px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { background: transparent; border: none; color: var(--muted); padding: 12px 18px; cursor: pointer; font-size: 0.85rem; font-weight: 600; border-bottom: 2px solid transparent; font-family: inherit; }
+.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.tab-panel { display: none; padding: 22px; }
+.tab-panel.active { display: block; }
+pre.code { background: rgba(139, 163, 255, 0.05); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.7; color: #c4cce8; }
+.code .c { color: #5b6687; } .code .g { color: #a7f3d0; }
+
+.faq { margin-top: 36px; max-width: 880px; }
+details { border: 1px solid var(--line); border-radius: 14px; padding: 4px 20px; margin-bottom: 12px; background: rgba(23,30,58,.3); }
+summary { cursor: pointer; font-weight: 600; padding: 16px 4px; font-size: 0.95rem; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-size: 1.25rem; color: var(--violet); transition: transform .2s; }
+details[open] summary::after { transform: rotate(45deg); }
+details p { padding: 0 4px 18px; color: var(--muted); font-size: 0.9rem; }
+
+.final { text-align: center; padding: 90px 24px 80px; position: relative; }
+.final h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+.final p { color: var(--muted); margin: 16px auto 30px; max-width: 52ch; }
+
+footer { border-top: 1px solid var(--line); padding: 34px 24px; }
+.foot-inner { max-width: var(--maxw); margin-inline: auto; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center; font-size: 0.82rem; color: var(--muted); }
+.foot-inner a { color: #c4cce8; text-decoration: none; } .foot-inner a:hover { color: var(--cyan); }
+.foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
+
+.og-banner { max-width: var(--maxw); margin: 8px auto 0; padding: 0 24px; }
+.og-frame { border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.og-frame img { display: block; width: 100%; height: auto; }
+
+@media (max-width: 1024px) { .tools-grid { grid-template-columns: repeat(3, 1fr); } .features { grid-template-columns: repeat(2, 1fr); } .cards3 { grid-template-columns: 1fr; } .hero { grid-template-columns: 1fr; padding-top: 44px; } .terminal { transform: none; } .stats { grid-template-columns: repeat(2, 1fr); } .nav-links { display: none; } }
+@media (max-width: 560px) { .tools-grid { grid-template-columns: repeat(2, 1fr); } .features { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="grid-overlay"></div>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a class="logo" href="#top" aria-label="MindGate home">
+      <svg class="logo-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <rect width="40" height="40" rx="9" fill="#10162e" stroke="#22d3ee" stroke-opacity="0.5"/>
+        <path d="M11 32V16l9-9 9 9v16" stroke="#22d3ee" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="20" cy="23" r="2.6" fill="#8b5cf6"/>
+        <path d="M20 19v-4M14 32h12" stroke="#8b5cf6" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.8"/>
+      </svg>
+      <span class="logo-text">MindGate<small>بوابة العقل · MCP</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="#features" data-i18n="nav_features">Features</a>
+      <a href="#architecture" data-i18n="nav_arch">Architecture</a>
+      <a href="#tools" data-i18n="nav_tools">Tools</a>
+      <a href="#install" data-i18n="nav_install">Install</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-actions">
+      <button class="lang-toggle" id="langToggle" aria-label="Toggle language">عربي</button>
+      <a class="btn btn-ghost" href="https://github.com/aaserag1/mindgate-mcp" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.78 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.4-5.27 5.69.41.36.78 1.07.78 2.15 0 1.56-.01 2.81-.01 3.19 0 .3.2.67.8.55A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div>
+    <span class="badge"><span class="dot"></span> v1.2.0 &nbsp;·&nbsp; MIT &nbsp;·&nbsp; <span data-i18n="badge_local">100% local — zero cloud</span></span>
+    <h1><span data-i18n="hero_h1_a">Your AI agents</span><br /><span class="grad-text" data-i18n="hero_h1_b">finally remember.</span></h1>
+    <p class="lead" data-i18n="hero_sub">One persistent, local memory shared by every AI coding agent — Antigravity, Cursor, Claude, OpenCode, Codex, Windsurf — through MCP. Decisions, conventions, bugfixes and session handoffs, always one recall away.</p>
+    <div class="hero-cta">
+      <span class="cmd"><span class="dollar">$</span> npx -y mindgate-mcp init<button class="copy-btn" data-copy="npx -y mindgate-mcp init">copy</button></span>
+      <a class="btn btn-primary" href="#install" data-i18n="hero_cta1">Get started →</a>
+    </div>
+    <p class="hero-note" data-i18n="hero_note">No account. No server. No network. <b>Steal it, fork it, audit it.</b></p>
+  </div>
+
+  <div class="terminal" aria-hidden="true">
+    <div class="term-bar">
+      <span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span>
+      <span class="term-title">mindgate — live cross-agent session</span>
+    </div>
+    <div class="term-body" id="termBody"></div>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><b>10</b><span data-i18n="stat1">MCP tools</span></div>
+  <div class="stat"><b>0</b><span data-i18n="stat2">network calls — ever</span></div>
+  <div class="stat"><b>FTS5</b><span data-i18n="stat3">BM25 full-text recall</span></div>
+  <div class="stat"><b>1</b><span data-i18n="stat4">SQLite file. chmod 600.</span></div>
+</div>
+
+<div class="clients-strip">
+  <small data-i18n="works_with">Works with every MCP client</small>
+  <div class="chip-row">
+    <span class="chip">Antigravity</span><span class="chip">Cursor</span><span class="chip">Claude Desktop</span><span class="chip">OpenCode</span><span class="chip">Codex CLI</span><span class="chip">Windsurf</span><span class="chip">Cline</span>
+  </div>
+</div>
+
+<section class="block" id="problem">
+  <p class="kicker" data-i18n="problem_kicker">The problem</p>
+  <h2 data-i18n="problem_h2">Every chat starts from zero.<br />And your keys keep leaking.</h2>
+  <div class="cards3">
+    <div class="card">
+      <div class="icon-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
+      <h3 data-i18n="pain1_t">Session amnesia</h3>
+      <p data-i18n="pain1_d">Your agent re-derives the same architecture decisions, re-fixes the same class of bug, and re-litigates the same conventions — every single session.</p>
+    </div>
+    <div class="card">
+      <div class="icon-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg></div>
+      <h3 data-i18n="pain2_t">Secret leakage into memory</h3>
+      <p data-i18n="pain2_d">Paste an error log with an API key into an agent and it lands in plain-text memory stores forever — unless it's redacted before it's written.</p>
+    </div>
+    <div class="card">
+      <div class="icon-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-5-6-5"/><path d="M12 19h8"/></svg></div>
+      <h3 data-i18n="pain3_t">Locked to one tool</h3>
+      <p data-i18n="pain3_d">Copilot knows what Cursor doesn't. Your memory should outlive any single client — switching agents shouldn't mean starting from zero.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="features">
+  <p class="kicker" data-i18n="feat_kicker">What you get</p>
+  <h2 data-i18n="feat_h2">One local brain,<br />every agent plugged in.</h2>
+  <div class="features">
+    <div class="feature"><h3>⚡ FTS5 BM25 recall</h3><p data-i18n="f1_d">SQLite's built-in full-text search ranks memories by relevance — architecture decisions, bugfixes, conventions — in microseconds, fully offline.</p><small>ZERO DEPENDENCIES</small></div>
+    <div class="feature"><h3>🔁 Cross-agent handoffs</h3><p data-i18n="f2_d">End a session in Antigravity, resume in Cursor. Structured session summaries, next steps and active files travel with the repo's memory.</p><small>log_session_summary</small></div>
+    <div class="feature"><h3>🧬 Auto-compiled AGENTS.md</h3><p data-i18n="f3_d">Stored decisions, conventions and bugfixes compile into the rules file every major agent reads natively. Atomic writes, timestamped <code>.bak</code> backups, hand-written files never overwritten without <code>force: true</code>.</p><small>sync_workspace_rules</small></div>
+    <div class="feature"><h3>🔒 Secret redaction on write</h3><p data-i18n="f4_d">OpenAI, GitHub, AWS, Slack, Google keys, JWTs and PEM blocks are masked with <code>[REDACTED:kind]</code> before anything touches disk. Tools report how many were caught.</p><small>MINDGATE_REDACT_SECRETS</small></div>
+    <div class="feature"><h3>🛡️ Node2Shell guard</h3><p data-i18n="f5_d">Mitigations for CVE-2026-111497: stdio-only transport, runtime version enforcement, and a Brotli decompression hard-lock installed before any other module loads.</p><small>CVE-2026-111497</small></div>
+    <div class="feature"><h3>✏️ In-place updates &amp; snapshots</h3><p data-i18n="f6_d">Decisions evolve — memory does too. Update records without losing their ID or timestamp, export portable JSON snapshots, keep FTS5 in sync automatically.</p><small>update_memory · export_memory_snapshot</small></div>
+  </div>
+</section>
+
+<section class="block" id="architecture">
+  <p class="kicker" data-i18n="arch_kicker">Architecture</p>
+  <h2 data-i18n="arch_h2">Six layers,<br />zero surprises.</h2>
+  <p class="sub" data-i18n="arch_sub">Every tool call flows through the same pipe. No hidden network, no implicit writes, no silent overwrites.</p>
+  <div class="arch" role="img" aria-label="MindGate request lifecycle diagram">
+    <div class="arch-head"><span>request lifecycle</span><span>stdio JSON-RPC · no network</span></div>
+    <ol>
+      <li class="step"><span class="step-num">01</span><span><b>Security bootstrap — <code>security/bootstrap.ts</code></b><p data-i18n="s1_d">First import evaluates the CVE-2026-111497 hard-lock (node:zlib Brotli APIs replaced with throwing stubs) and checks your Node/Bun version against the patched releases.</p></span></li>
+      <li class="step"><span class="step-num">02</span><span><b>MCP handlers — <code>index.ts</code></b><p data-i18n="s2_d">10 tools, 2 resources, 1 prompt. Pure stdio transport; tool failures return <code>isError: true</code>, never a protocol crash.</p></span></li>
+      <li class="step"><span class="step-num">03</span><span><b>Input validation — <code>validation.ts</code></b><p data-i18n="s3_d">Types, ranges, positive IDs and hard size limits on every argument. The MCP SDK doesn't enforce schemas — so this does, always.</p></span></li>
+      <li class="step"><span class="step-num">04</span><span><b>Secret redaction — <code>security/secretRedactor.ts</code></b><p data-i18n="s4_d">Pattern-based masking (OpenAI / GitHub / AWS / Slack / Google / JWT / PEM) on every write path — memories, handoffs, preferences.</p></span></li>
+      <li class="step"><span class="step-num">05</span><span><b>Storage — <code>db/memoryStore.ts</code></b><p data-i18n="s5_d">Embedded SQLite (WAL) + FTS5 BM25 at <code>~/.mindgate/mindgate.db</code> — owner-only permissions (chmod 600, dir 700). Triggers keep the index in sync.</p></span></li>
+      <li class="step"><span class="step-num">06</span><span><b>Rules writer — <code>rulesSync.ts</code></b><p data-i18n="s6_d">Compiles memory into AGENTS.md-class files: atomic temp+rename, <code>.bak-&lt;timestamp&gt;</code> backups, sentinel marker guards your hand-written files.</p></span></li>
+    </ol>
+  </div>
+  <p class="trust-note" data-i18n="trust_note">⚠️ Honest limits: memories are data, not instructions · redaction is best-effort pattern matching · the Brotli lock is defense-in-depth — a patched runtime is the definitive fix. Full threat model in SECURITY.md.</p>
+</section>
+
+<section class="block" id="tools">
+  <p class="kicker" data-i18n="tools_kicker">MCP Tools</p>
+  <h2 data-i18n="tools_h2">Ten tools,<br />no ceremony.</h2>
+  <div class="tools-grid" id="toolsGrid"></div>
+</section>
+
+<section class="block" id="install">
+  <p class="kicker" data-i18n="install_kicker">Install</p>
+  <h2 data-i18n="install_h2">Thirty seconds<br />to a smarter agent.</h2>
+  <div class="install">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="npx" role="tab">npx (fastest)</button>
+      <button class="tab" data-tab="src" role="tab">Build from source</button>
+      <button class="tab" data-tab="cfg" role="tab">Client config</button>
+    </div>
+    <div class="tab-panel active" id="panel-npx" role="tabpanel">
+      <pre class="code"><span class="c"># requires Node 22.23.4+ / 24.22.1+ / 26.12.1+</span>
+npm install -g mindgate-mcp
+
+<span class="c"># or zero-install</span>
+npx -y mindgate-mcp init   <span class="c"># prints ready-to-paste MCP config</span></pre>
+    </div>
+    <div class="tab-panel" id="panel-src" role="tabpanel">
+      <pre class="code"><span class="c"># Windows / macOS / Linux</span>
+git clone https://github.com/aaserag1/mindgate-mcp.git
+cd mindgate-mcp
+npm install
+npm test          <span class="c"># 29 tests — real SQLite + FTS5</span>
+npm run build
+npm run init-config</pre>
+    </div>
+    <div class="tab-panel" id="panel-cfg" role="tabpanel">
+      <pre class="code">{
+  <span class="g">"mcpServers"</span>: {
+    <span class="g">"mindgate"</span>: {
+      <span class="g">"command"</span>: <span class="g">"node"</span>,
+      <span class="g">"args"</span>: [<span class="g">"/absolute/path/to/mindgate-mcp/dist/index.js"</span>],
+      <span class="g">"env"</span>: { <span class="g">"MINDGATE_DB_PATH"</span>: <span class="g">"/home/you/.mindgate/mindgate.db"</span> }
+    }
+  }
+}</pre>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="faq">
+  <p class="kicker">FAQ</p>
+  <h2 data-i18n="faq_h2">Fair questions.<br />Straight answers.</h2>
+  <div class="faq">
+    <details open><summary data-i18n="faq1_q">Does my code or memory leave my machine?</summary><p data-i18n="faq1_a">No. MindGate has no network code at all — it speaks stdio JSON-RPC to your agent and SQLite to your disk. The only way data leaves is if you paste it into an agent that sends it to a model API, same as always.</p></details>
+    <details><summary data-i18n="faq2_q">What happens if I paste an API key into a memory?</summary><p data-i18n="faq2_a">Known token shapes (OpenAI, GitHub, AWS, Slack, Google, JWT, PEM) are replaced with <code>[REDACTED:kind]</code> before anything is written, and the tool response tells you how many were caught. It's a strong safety net, not a guarantee — keep secrets out of prompts entirely.</p></details>
+    <details><summary data-i18n="faq3_q">Will sync_workspace_rules overwrite my hand-written AGENTS.md?</summary><p data-i18n="faq3_a">Never silently. MindGate-generated files carry an HTML sentinel marker; hand-written files are refused unless you explicitly pass <code>force: true</code> — and a timestamped <code>.bak</code> backup is always created first. Writes are atomic (temp file + rename).</p></details>
+    <details><summary data-i18n="faq4_q">Which agents work with it?</summary><p data-i18n="faq4_a">Anything that speaks MCP over stdio with tool support: Antigravity, Cursor, Claude Desktop, OpenCode, Codex CLI, Windsurf, Cline. If it launches an MCP server, MindGate plugs in.</p></details>
+    <details><summary data-i18n="faq5_q">How do I uninstall?</summary><p data-i18n="faq5_a">Remove the MCP server entry from your client config, then delete <code>~/.mindgate/</code>. That's it — one directory, one config block. No daemon, no registry, no residue.</p></details>
+  </div>
+</section>
+
+<div class="og-banner"><div class="og-frame"><img src="assets/og-image.jpg" alt="MindGate — an Egyptian gate fused with glowing circuitry, the symbol of بوابة العقل" width="1376" height="768" /></div></div>
+
+<section class="final">
+  <h2 data-i18n="final_h2">Your next session<br /><span class="grad-text">shouldn't start from zero.</span></h2>
+  <p data-i18n="final_p">Free, open-source, MIT licensed. Audit every line — that's the point of local.</p>
+  <a class="btn btn-primary" style="font-size:1rem; padding: 14px 28px" href="https://github.com/aaserag1/mindgate-mcp" target="_blank" rel="noopener" data-i18n="final_cta">Star on GitHub →</a>
+</section>
+
+<footer>
+  <div class="foot-inner">
+    <div><strong>MindGate MCP</strong> · بوابة العقل · <span id="year"></span> · MIT License</div>
+    <div class="foot-links">
+      <a href="https://github.com/aaserag1/mindgate-mcp" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/aaserag1/mindgate-mcp/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
+      <a href="https://github.com/aaserag1/mindgate-mcp/blob/main/README.ar.md" target="_blank" rel="noopener">التوثيق بالعربي</a>
+      <a href="https://github.com/aaserag1/mindgate-mcp/blob/main/SECURITY.md" target="_blank" rel="noopener">Security</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const I18N = {
+  en: {
+    nav_features: "Features", nav_arch: "Architecture", nav_tools: "Tools", nav_install: "Install",
+    badge_local: "100% local — zero cloud",
+    hero_h1_a: "Your AI agents", hero_h1_b: "finally remember.",
+    hero_sub: "One persistent, local memory shared by every AI coding agent — Antigravity, Cursor, Claude, OpenCode, Codex, Windsurf — through MCP. Decisions, conventions, bugfixes and session handoffs, always one recall away.",
+    hero_cta1: "Get started →", hero_note: "No account. No server. No network. <b>Steal it, fork it, audit it.</b>",
+    works_with: "Works with every MCP client",
+    stat1: "MCP tools", stat2: "network calls — ever", stat3: "BM25 full-text recall", stat4: "SQLite file. chmod 600.",
+    problem_kicker: "The problem", problem_h2: "Every chat starts from zero.<br />And your keys keep leaking.",
+    pain1_t: "Session amnesia", pain1_d: "Your agent re-derives the same architecture decisions, re-fixes the same class of bug, and re-litigates the same conventions — every single session.",
+    pain2_t: "Secret leakage into memory", pain2_d: "Paste an error log with an API key into an agent and it lands in plain-text memory stores forever — unless it's redacted before it's written.",
+    pain3_t: "Locked to one tool", pain3_d: "Copilot knows what Cursor doesn't. Your memory should outlive any single client — switching agents shouldn't mean starting from zero.",
+    feat_kicker: "What you get", feat_h2: "One local brain,<br />every agent plugged in.",
+    f1_d: "SQLite's built-in full-text search ranks memories by relevance — architecture decisions, bugfixes, conventions — in microseconds, fully offline.",
+    f2_d: "End a session in Antigravity, resume in Cursor. Structured session summaries, next steps and active files travel with the repo's memory.",
+    f3_d: "Stored decisions, conventions and bugfixes compile into the rules file every major agent reads natively. Atomic writes, timestamped <code>.bak</code> backups, hand-written files never overwritten without <code>force: true</code>.",
+    f4_d: "OpenAI, GitHub, AWS, Slack, Google keys, JWTs and PEM blocks are masked with <code>[REDACTED:kind]</code> before anything touches disk. Tools report how many were caught.",
+    f5_d: "Mitigations for CVE-2026-111497: stdio-only transport, runtime version enforcement, and a Brotli decompression hard-lock installed before any other module loads.",
+    f6_d: "Decisions evolve — memory does too. Update records without losing their ID or timestamp, export portable JSON snapshots, keep FTS5 in sync automatically.",
+    arch_kicker: "Architecture", arch_h2: "Six layers,<br />zero surprises.", arch_sub: "Every tool call flows through the same pipe. No hidden network, no implicit writes, no silent overwrites.",
+    s1_d: "First import evaluates the CVE-2026-111497 hard-lock (node:zlib Brotli APIs replaced with throwing stubs) and checks your Node/Bun version against the patched releases.",
+    s2_d: "10 tools, 2 resources, 1 prompt. Pure stdio transport; tool failures return <code>isError: true</code>, never a protocol crash.",
+    s3_d: "Types, ranges, positive IDs and hard size limits on every argument. The MCP SDK doesn't enforce schemas — so this does, always.",
+    s4_d: "Pattern-based masking (OpenAI / GitHub / AWS / Slack / Google / JWT / PEM) on every write path — memories, handoffs, preferences.",
+    s5_d: "Embedded SQLite (WAL) + FTS5 BM25 at <code>~/.mindgate/mindgate.db</code> — owner-only permissions (chmod 600, dir 700). Triggers keep the index in sync.",
+    s6_d: "Compiles memory into AGENTS.md-class files: atomic temp+rename, <code>.bak-&lt;timestamp&gt;</code> backups, sentinel marker guards your hand-written files.",
+    trust_note: "⚠️ Honest limits: memories are data, not instructions · redaction is best-effort pattern matching · the Brotli lock is defense-in-depth — a patched runtime is the definitive fix. Full threat model in SECURITY.md.",
+    tools_kicker: "MCP Tools", tools_h2: "Ten tools,<br />no ceremony.",
+    install_kicker: "Install", install_h2: "Thirty seconds<br />to a smarter agent.",
+    faq_h2: "Fair questions.<br />Straight answers.",
+    faq1_q: "Does my code or memory leave my machine?", faq1_a: "No. MindGate has no network code at all — it speaks stdio JSON-RPC to your agent and SQLite to your disk. The only way data leaves is if you paste it into an agent that sends it to a model API, same as always.",
+    faq2_q: "What happens if I paste an API key into a memory?", faq2_a: "Known token shapes (OpenAI, GitHub, AWS, Slack, Google, JWT, PEM) are replaced with <code>[REDACTED:kind]</code> before anything is written, and the tool response tells you how many were caught. It's a strong safety net, not a guarantee — keep secrets out of prompts entirely.",
+    faq3_q: "Will sync_workspace_rules overwrite my hand-written AGENTS.md?", faq3_a: "Never silently. MindGate-generated files carry an HTML sentinel marker; hand-written files are refused unless you explicitly pass <code>force: true</code> — and a timestamped <code>.bak</code> backup is always created first. Writes are atomic (temp file + rename).",
+    faq4_q: "Which agents work with it?", faq4_a: "Anything that speaks MCP over stdio with tool support: Antigravity, Cursor, Claude Desktop, OpenCode, Codex CLI, Windsurf, Cline. If it launches an MCP server, MindGate plugs in.",
+    faq5_q: "How do I uninstall?", faq5_a: "Remove the MCP server entry from your client config, then delete <code>~/.mindgate/</code>. That's it — one directory, one config block. No daemon, no registry, no residue.",
+    final_h2: "Your next session<br /><span class=\"grad-text\">shouldn't start from zero.</span>",
+    final_p: "Free, open-source, MIT licensed. Audit every line — that's the point of local.", final_cta: "Star on GitHub →"
+  },
+  ar: {
+    nav_features: "المميزات", nav_arch: "المعمارية", nav_tools: "الأدوات", nav_install: "التثبيت",
+    badge_local: "محلي 100% — بدون سحابة",
+    hero_h1_a: "وكلاء الذكاء الاصطناعي", hero_h1_b: "بقوا فاكرين.",
+    hero_sub: "ذاكرة محلية واحدة دائمة تتشاركها كل أدوات البرمجة بالذكاء الاصطناعي — Antigravity وCursor وClaude وOpenCode وCodex وWindsurf — عبر MCP. القرارات، الاتفاقيات، إصلاحات الأخطاء والتسليمات، دائمًا على بُعد استدعاء واحد.",
+    hero_cta1: "ابدأ الآن →", hero_note: "لا حساب. لا سيرفر. لا شبكة. <b>انسخها، افركعها، راجع كودها.</b>",
+    works_with: "تعمل مع كل عميل MCP",
+    stat1: "أداة MCP", stat2: "اتصال شبكة — أبدًا", stat3: "بحث BM25 كامل النص", stat4: "ملف SQLite واحد — chmod 600",
+    problem_kicker: "المشكلة", problem_h2: "كل جلسة تبدأ من الصفر.<br />والمفاتيح بتتسرب باستمرار.",
+    pain1_t: "فقدان الذاكرة بين الجلسات", pain1_d: "الوكيل بتاعك بيعيد نفس القرارات المعمارية، وبيعيد حل نفس صنف الأخطاء، وبيعيد النقاش في نفس الاتفاقيات — في كل جلسة من جديد.",
+    pain2_t: "تسرّب الأسرار داخل الذاكرة", pain2_d: "الصق لوق فيه مفتاح API في الوكيل — والنص هيتحفظ في مخزن نصي صريح للأبد، إلا لو اتعمى قبل ما يتخزن.",
+    pain3_t: "محبوس جوه أداة واحدة", pain3_d: "Copilot عارف حاجة Cursor مايعرفهاش. ذاكرتك المفروض تعيش أكتر من أي عميل — وتغيير الأداة ما يعنيش البداية من الصفر.",
+    feat_kicker: "اللي هتحصل عليه", feat_h2: "عقل محلي واحد،<br />وكل أداة متوصلة بيه.",
+    f1_d: "البحث كامل النص المدمج في SQLite بيّرتب الذكريات حسب الصلة — قرارات، إصلاحات، اتفاقيات — في ميكروثوانٍ، بدون إنترنت نهائيًا.",
+    f2_d: "اقفل الجلسة في Antigravity، وكملها في Cursor. ملخص الجلسة، الخطوات القادمة والملفات النشطة بتتنقل مع ذاكرة المشروع.",
+    f3_d: "القرارات والاتفاقيات والإصلاحات بتتجمّع تلقائيًا في ملف القواعد اللي كل الأدوات الكبيرة بتقراه. كتابة ذرّية، نسخة احتياطية بختم زمني، وملفاتك المكتوبة بإيدك مابتتمسحش إلا بـ <code>force: true</code>.",
+    f4_d: "مفاتيح OpenAI وGitHub وAWS وSlack وGoogle والـ JWT ومفاتيح PEM بتتعمى بـ <code>[REDACTED:kind]</code> قبل ما تلمس القرص. وكل أداة بتقلك كام مفتاح اتمسك.",
+    f5_d: "إجراءات تخفيف لـ CVE-2026-111497: نقل stdio فقط، فحص إصدار Node/Bun، وقفل فك ضغط Brotli بيتثبت قبل أي مكوّن تاني.",
+    f6_d: "القرارات بتتطور — والذاكرة لازم تتطور معاها. حدّث أي سجل من غير فقدان المعرف أو التاريخ، وصدّر نسخ JSON محمولة، والفهرس بيفضل متزامن تلقائيًا.",
+    arch_kicker: "المعمارية", arch_h2: "ست طبقات،<br />ولا مفاجآت.", arch_sub: "كل استدعاء أداة بيعدي على نفس الأنبوبة. لا شبكة خفية، لا كتابة بدون قصد، لا استبدال صامت.",
+    s1_d: "أول ملف بيتقيّم يثبت قفل CVE-2026-111497 (استبدال دوال Brotli في node:zlib بدوال بترمي خطأ) ويفحص إصدار Node/Bun ضد الإصدارات المُصلحة.",
+    s2_d: "10 أدوات، 2 موارد، قالب واحد. نقل stdio خالص؛ أي فشل بيرجع <code>isError: true</code> من غير ما البروتوكول ينهار.",
+    s3_d: "الأنواع، المديات، معرفات موجبة وحدود حجم صارمة لكل معامل. الـ SDK مابينفذش المخططات — فده اللي بينفذها، دايمًا.",
+    s4_d: "تعتيم بالأنماط (OpenAI / GitHub / AWS / Slack / Google / JWT / PEM) على كل مسارات الكتابة — ذكريات، تسليمات، تفضيلات.",
+    s5_d: "SQLite مدمج (WAL) + FTS5 BM25 في <code>~/.mindgate/mindgate.db</code> — بصلاحيات المالك فقط (chmod 600 والمجلد 700). الـ triggers بتزامن الفهرس تلقائيًا.",
+    s6_d: "بيحوّل الذاكرة لملفات من طراز AGENTS.md: كتابة ذرّية (مؤقت + rename)، نسخ <code>.bak-&lt;timestamp&gt;</code>، وملفاتك اليدوية محمية بعلامة خاصة.",
+    trust_note: "⚠️ حدود بصراحة: الذكريات بيانات مش تعليمات · التعتيم أفضل-حالة مش ضمان · قفل Brotli احتياطي — الإصدار المُصلح من Node هو الحل النهائي. نموذج التهديد كامل في SECURITY.md.",
+    tools_kicker: "أدوات MCP", tools_h2: "10 أدوات،<br />من غير طقوس.",
+    install_kicker: "التثبيت", install_h2: "30 ثانية<br />ووكيلك بقى أذكى.",
+    faq_h2: "أسئلة منطقية.<br />إجابات صريحة.",
+    faq1_q: "هل كودي أو ذاكرتي بتخرج من جهازي؟", faq1_a: "لأ. MindGate مفيهوش أي كود شبكة — بيكلم وكيلك عبر stdio (JSON-RPC) وبيكلم القرص عبر SQLite. الداتا مش هتخرج إلا لو لصقتها أنت في وكيل بيبعتها لـ API نموذج، زي أي وقت تاني.",
+    faq2_q: "لو لصقت مفتاح API في ذاكرة؟", faq2_a: "أنماط المفاتيح المعروفة (OpenAI، GitHub، AWS، Slack، Google، JWT، PEM) بتتستبدل بـ <code>[REDACTED:kind]</code> قبل أي كتابة، وكل أداة بتقولك كام مفتاح اتمسك. دي شبكة أمان قوية مش ضمان 100% — الأفضل ما تلصقش الأسرار أصلًا.",
+    faq3_q: "هل sync_workspace_rules هتمسح AGENTS.md المكتوب بإيدي؟", faq3_a: "أبدًا من غير إذنك. ملفات MindGate بتحمل علامة HTML خاصة؛ والملفات المكتوبة يدويًا بتترفض إلا بـ <code>force: true</code> صراحة — وبيتعمل نسخة <code>.bak</code> بختم زمني قبل أي كتابة. والكتابة نفسها ذرّية.",
+    faq4_q: "إيه الأدوات اللي بتشتغل معاها؟", faq4_a: "أي حاجة بتتكلم MCP عبر stdio مع دعم الأدوات: Antigravity، Cursor، Claude Desktop، OpenCode، Codex CLI، Windsurf، Cline. لو وكيلك بيطلق سيرفر MCP، MindGate بيتركّب فيه.",
+    faq5_q: "إزاي أشيلها؟", faq5_a: "امسح مدخلة MCP من إعدادات العميل، وامسح مجلد <code>~/.mindgate/</code>. خلصت — مجلد واحد، كتلة إعدادات واحدة. لا خدمة خلفية، لا ريجستري، لا بواقي.",
+    final_h2: "جلستك الجاية<br /><span class=\"grad-text\">مافيش داعي تبدأ من الصفر.</span>",
+    final_p: "مجاني، مفتوح المصدر، MIT. راجع كل سطر — دي روح المحلي.", final_cta: "نجمة على GitHub →"
+  }
+};
+
+const TOOLS = [
+  ["remember_decision", "Store a decision / bugfix / convention in memory"],
+  ["update_memory", "Update a memory in place — keeps ID & history"],
+  ["recall_context", "FTS5 BM25 search + workspace/category filters"],
+  ["log_session_summary", "Hand off the session to the next agent"],
+  ["sync_workspace_rules", "Compile AGENTS.md / CLAUDE.md safely"],
+  ["export_memory_snapshot", "Portable JSON backup of everything"],
+  ["set_user_preference", "Persistent key/value developer preferences"],
+  ["get_user_preferences", "Read back all saved preferences"],
+  ["list_workspaces", "Every workspace + memory counts"],
+  ["delete_memory", "Remove outdated memories by ID"],
+];
+
+const grid = document.getElementById("toolsGrid");
+grid.innerHTML = TOOLS.map(([name, desc]) => `<div class="tool"><code>${name}</code><span>${desc}</span></div>`).join("");
+
+const root = document.documentElement;
+const toggleBtn = document.getElementById("langToggle");
+function applyLang(lang) {
+  root.setAttribute("lang", lang);
+  root.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const v = I18N[lang][el.getAttribute("data-i18n")];
+    if (v !== undefined) el.innerHTML = v;
+  });
+  toggleBtn.textContent = lang === "ar" ? "EN" : "عربي";
+  try { localStorage.setItem("mindgate-lang", lang); } catch {}
+}
+toggleBtn.addEventListener("click", () => { applyLang(root.getAttribute("lang") === "ar" ? "en" : "ar"); });
+try { if (localStorage.getItem("mindgate-lang") === "ar") applyLang("ar"); } catch {}
+
+document.querySelectorAll("[data-copy]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(btn.getAttribute("data-copy")); btn.textContent = "copied ✓"; }
+    catch { btn.textContent = "copy"; }
+    setTimeout(() => (btn.textContent = "copy"), 1600);
+  });
+});
+
+const tabs = document.querySelectorAll(".tab");
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    tabs.forEach((t) => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + tab.dataset.tab));
+  });
+});
+
+const nav = document.getElementById("nav");
+addEventListener("scroll", () => nav.classList.toggle("scrolled", scrollY > 30), { passive: true });
+
+const SCRIPT = [
+  { cls: "t-dim",   text: "# 09:14 — Antigravity session #1" },
+  { cls: "t-agent", text: "agent → remember_decision({" },
+  { cls: "t-str",   text: '  title: "Use Postgres RLS for multi-tenant isolation",' },
+  { cls: "t-str",   text: '  category: "architecture", tags: ["db", "rls"] })' },
+  { cls: "t-ok",    text: '✓ saved  id=41  redacted_secrets=0' },
+  { cls: "t-dim",   text: "# 17:02 — Cursor session #2 (same repo, different tool)" },
+  { cls: "t-agent", text: "agent → recall_context({ query: \"multi-tenant\" })" },
+  { cls: "t-tool",  text: "← 0.4ms · BM25 rank 1.00" },
+  { cls: "t-str",   text: '  "Use Postgres RLS for multi-tenant isolation"' },
+  { cls: "t-agent", text: "agent → log_session_summary({ next_steps: [" },
+  { cls: "t-str",   text: '  "wire RLS policies", "migrate auth schema" ] })' },
+  { cls: "t-ok",    text: "✓ handoff saved — Codex resumes in seconds" },
+];
+const termBody = document.getElementById("termBody");
+let scriptIndex = 0;
+function typeLine(line, done) {
+  const div = document.createElement("div");
+  div.className = "tline " + line.cls;
+  termBody.appendChild(div);
+  let i = 0;
+  const step = () => {
+    if (i <= line.text.length) { div.textContent = line.text.slice(0, i); i += 2; setTimeout(step, 11); }
+    else { done(); }
+  };
+  step();
+}
+function runScript() {
+  if (scriptIndex >= SCRIPT.length) {
+    setTimeout(() => { termBody.innerHTML = ""; scriptIndex = 0; runScript(); }, 5200);
+    return;
+  }
+  typeLine(SCRIPT[scriptIndex], () => { scriptIndex += 1; setTimeout(runScript, SCRIPT[scriptIndex - 1].cls === "t-ok" ? 600 : 140); });
+}
+if (termBody) runScript();
+
+document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
