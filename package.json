@@ -14,7 +14,7 @@
     "url": "https://github.com/aaserag1/mindgate-mcp/issues"
   },
   "bin": {
-    "mindgate-mcp": "./dist/index.js"
+    "mindgate-mcp": "dist/index.js"
   },
   "files": [
     "dist",
