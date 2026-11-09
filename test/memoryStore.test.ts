@@ -25,7 +25,11 @@ after(() => {
   }
 });
 
-test("database file is created owner-only (0600)", () => {
+test("database file is created owner-only (0600)", (t) => {
+  if (process.platform === "win32") {
+    t.skip("POSIX permission bits are not supported on Windows");
+    return;
+  }
   const mode = fs.statSync(dbPath).mode & 0o777;
   assert.equal(mode, 0o600);
 });
