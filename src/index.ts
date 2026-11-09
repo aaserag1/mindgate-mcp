@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * MindGate (بوابة العقل) v1.1.0 — Model Context Protocol (MCP) Server
+ * MindGate (بوابة العقل) v1.2.0 — Model Context Protocol (MCP) Server
  *
  * A unified, local-first memory & context gateway for Antigravity, OpenCode,
- * Codex, Cursor, and Claude. Hardened against Node2Shell (CVE-2026-111497).
+ * Codex, Cursor, and Claude. Mitigates Node2Shell (CVE-2026-111497).
  */
 
-import { enforceNode2ShellProtection } from "./security/node2shellGuard.js";
-
-// Step 1: Activate Node2Shell (CVE-2026-111497) security shield before loading any I/O
-const securityStatus = enforceNode2ShellProtection();
+// Step 1: Install the Node2Shell (CVE-2026-111497) hard-lock BEFORE any other
+// module is evaluated. ESM imports are evaluated in order, so this MUST stay
+// the first import in the file.
+import { securityStatus } from "./security/bootstrap.js";
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -21,10 +21,22 @@ import {
   ReadResourceRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { MindGateStore, MemoryCategory } from "./db/memoryStore.js";
+import { MindGateStore } from "./db/memoryStore.js";
+import { writeRulesFile, RulesWriteError } from "./rulesSync.js";
+import {
+  LIMITS,
+  ToolInputError,
+  ensureArgsObject,
+  requiredString,
+  optionalString,
+  optionalBoolean,
+  optionalPositiveInt,
+  optionalLimit,
+  optionalStringArray,
+  optionalCategory,
+} from "./validation.js";
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -40,7 +52,7 @@ function printInitGuide(): void {
   const scriptPath = path.resolve(__filename).replace(/\\/g, "/");
   console.log(`
 =======================================================================
-🧠 MindGate v1.1.0 (بوابة العقل) — Configuration Generator
+🧠 MindGate v1.2.0 (بوابة العقل) — Configuration Generator
 🛡️ Security Status: ${securityStatus.advisory}
 =======================================================================
 
@@ -102,7 +114,7 @@ const store = new MindGateStore();
 const server = new Server(
   {
     name: "mindgate-mcp",
-    version: "1.1.0",
+    version: "1.2.0",
   },
   {
     capabilities: {
@@ -288,7 +300,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sync_workspace_rules",
         description:
-          "Generate a structured Markdown rules file (AGENTS.md, .cursorrules, or CLAUDE.md) from stored MindGate memories, conventions, preferences, and latest session handoff, optionally writing it directly to the project directory.",
+          "Generate a structured Markdown rules file (AGENTS.md, .cursorrules, or CLAUDE.md) from stored MindGate memories, conventions, preferences, and latest session handoff. Writes are atomic; existing files are backed up to <file>.bak-<timestamp> and hand-written files are never overwritten unless force=true.",
         inputSchema: {
           type: "object",
           properties: {
@@ -312,6 +324,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               ],
               description:
                 "Target filename to write inside project_dir (default: 'AGENTS.md').",
+            },
+            force: {
+              type: "boolean",
+              description:
+                "Allow overwriting an existing target file that MindGate did not generate (e.g. a hand-written AGENTS.md). A timestamped .bak backup is always created before overwriting. Default false.",
             },
             include_global: {
               type: "boolean",
@@ -403,17 +420,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args = {} } = request.params;
+  const { name, arguments: rawArgs } = request.params;
 
-  switch (name) {
+  try {
+    const args = ensureArgsObject(rawArgs);
+
+    switch (name) {
     case "remember_decision": {
-      const record = store.rememberDecision({
-        workspace: args.workspace as string | undefined,
-        category: args.category as MemoryCategory | undefined,
-        title: String(args.title),
-        content: String(args.content),
-        tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
-        sourceAgent: args.source_agent as string | undefined,
+      const { record, redactions } = store.rememberDecision({
+        workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
+        category: optionalCategory(args.category),
+        title: requiredString(args.title, "title", LIMITS.titleMax),
+        content: requiredString(args.content, "content", LIMITS.contentMax),
+        tags: optionalStringArray(args.tags, "tags", LIMITS.tagsMax, LIMITS.tagMax) ?? [],
+        sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
       });
       return {
         content: [
@@ -423,6 +443,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               {
                 status: "saved",
                 message: "Memory stored in MindGate (بوابة العقل).",
+                redacted_secrets: redactions,
                 record,
               },
               null,
@@ -434,26 +455,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case "update_memory": {
-      const id = Number(args.id);
-      const updated = store.updateMemory({
+      const id = optionalPositiveInt(args.id, "id");
+      if (id === undefined) {
+        throw new ToolInputError('Missing or invalid required field: "id" (positive integer expected).');
+      }
+      const result = store.updateMemory({
         id,
-        workspace: args.workspace as string | undefined,
-        category: args.category as MemoryCategory | undefined,
-        title: args.title !== undefined ? String(args.title) : undefined,
-        content: args.content !== undefined ? String(args.content) : undefined,
-        tags: Array.isArray(args.tags) ? args.tags.map(String) : undefined,
-        sourceAgent: args.source_agent as string | undefined,
+        workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
+        category: optionalCategory(args.category),
+        title: optionalString(args.title, "title", LIMITS.titleMax),
+        content: optionalString(args.content, "content", LIMITS.contentMax),
+        tags: optionalStringArray(args.tags, "tags", LIMITS.tagsMax, LIMITS.tagMax),
+        sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
       });
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify(
-              updated
+              result
                 ? {
                     status: "updated",
                     message: `Memory #${id} updated in-place in MindGate (بوابة العقل).`,
-                    record: updated,
+                    redacted_secrets: result.redactions,
+                    record: result.record,
                   }
                 : {
                     status: "not_found",
@@ -470,12 +495,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case "recall_context": {
       const result = store.recallContext({
-        query: args.query as string | undefined,
-        workspace: args.workspace as string | undefined,
-        category: args.category as MemoryCategory | undefined,
-        limit: typeof args.limit === "number" ? args.limit : 10,
+        query: optionalString(args.query, "query", LIMITS.queryMax),
+        workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
+        category: optionalCategory(args.category),
+        limit: optionalLimit(args.limit, "limit", 50) ?? 10,
         includeGlobal:
-          typeof args.include_global === "boolean" ? args.include_global : true,
+          optionalBoolean(args.include_global, "include_global") ?? true,
       });
       return {
         content: [
@@ -495,16 +520,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case "log_session_summary": {
-      const session = store.logSessionSummary({
-        workspace: args.workspace as string | undefined,
-        sourceAgent: args.source_agent as string | undefined,
-        summary: String(args.summary),
-        nextSteps: Array.isArray(args.next_steps)
-          ? args.next_steps.map(String)
-          : [],
-        activeFiles: Array.isArray(args.active_files)
-          ? args.active_files.map(String)
-          : [],
+      const { record, redactions } = store.logSessionSummary({
+        workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
+        sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
+        summary: requiredString(args.summary, "summary", LIMITS.summaryMax),
+        nextSteps: optionalStringArray(args.next_steps, "next_steps", LIMITS.nextStepsMax, LIMITS.contentMax) ?? [],
+        activeFiles: optionalStringArray(args.active_files, "active_files", LIMITS.activeFilesMax, LIMITS.projectDirMax) ?? [],
       });
       return {
         content: [
@@ -515,7 +536,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 status: "logged",
                 message:
                   "Session handoff logged. Ready for next AI agent to resume.",
-                session,
+                redacted_secrets: redactions,
+                session: record,
               },
               null,
               2
@@ -527,30 +549,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case "sync_workspace_rules": {
       const generated = store.generateWorkspaceRulesMarkdown({
-        workspace: args.workspace as string | undefined,
+        workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
         includeGlobal:
-          typeof args.include_global === "boolean" ? args.include_global : true,
+          optionalBoolean(args.include_global, "include_global") ?? true,
       });
 
       const projectDir =
-        typeof args.project_dir === "string" ? args.project_dir.trim() : "";
-      const targetFile =
-        typeof args.target_file === "string" &&
-        ALLOWED_RULE_FILENAMES.has(args.target_file)
-          ? args.target_file
-          : "AGENTS.md";
+        optionalString(args.project_dir, "project_dir", LIMITS.projectDirMax)?.trim() ?? "";
+      const targetFileArg = optionalString(args.target_file, "target_file", 100);
+      let targetFile = "AGENTS.md";
+      if (targetFileArg !== undefined) {
+        if (!ALLOWED_RULE_FILENAMES.has(targetFileArg)) {
+          throw new ToolInputError(
+            `Invalid target_file "${targetFileArg}". Allowed: ${[...ALLOWED_RULE_FILENAMES].join(", ")}.`
+          );
+        }
+        targetFile = targetFileArg;
+      }
+      const force = optionalBoolean(args.force, "force") ?? false;
 
       let writtenTo: string | null = null;
+      let backupPath: string | null = null;
       if (projectDir) {
-        const resolvedDir = path.resolve(projectDir);
-        if (
-          fs.existsSync(resolvedDir) &&
-          fs.statSync(resolvedDir).isDirectory()
-        ) {
-          const fullTarget = path.join(resolvedDir, targetFile);
-          fs.writeFileSync(fullTarget, generated.markdown, "utf8");
-          writtenTo = fullTarget;
-        }
+        const result = writeRulesFile({
+          projectDir,
+          targetFile,
+          markdown: generated.markdown,
+          force,
+        });
+        writtenTo = result.writtenTo;
+        backupPath = result.backupPath;
       }
 
       return {
@@ -561,6 +589,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               {
                 status: writtenTo ? "synced_to_disk" : "generated",
                 written_to: writtenTo,
+                backup: backupPath,
                 workspace: generated.workspace,
                 memory_count: generated.memoryCount,
                 preference_count: generated.preferenceCount,
@@ -577,7 +606,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case "export_memory_snapshot": {
       const snapshot = store.exportSnapshot(
-        args.workspace as string | undefined
+        optionalString(args.workspace, "workspace", LIMITS.workspaceMax)
       );
       return {
         content: [
@@ -590,16 +619,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case "set_user_preference": {
-      const pref = store.setUserPreference(
-        String(args.key),
-        String(args.value),
-        (args.category as string | undefined) || "coding-style"
-      );
+      const key = requiredString(args.key, "key", LIMITS.preferenceKeyMax);
+      const value = requiredString(args.value, "value", LIMITS.preferenceValueMax);
+      const category =
+        optionalString(args.category, "category", LIMITS.tagMax) || "coding-style";
+      const { record, redactions } = store.setUserPreference(key, value, category);
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify({ status: "saved", preference: pref }, null, 2),
+            text: JSON.stringify(
+              { status: "saved", redacted_secrets: redactions, preference: record },
+              null,
+              2
+            ),
           },
         ],
       };
@@ -607,7 +640,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case "get_user_preferences": {
       const prefs = store.getUserPreferences(
-        args.category as string | undefined
+        optionalString(args.category, "category", LIMITS.tagMax)
       );
       return {
         content: [
@@ -632,13 +665,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case "delete_memory": {
-      const deleted = store.deleteMemory(Number(args.id));
+      const id = optionalPositiveInt(args.id, "id");
+      if (id === undefined) {
+        throw new ToolInputError('Missing or invalid required field: "id" (positive integer expected).');
+      }
+      const deleted = store.deleteMemory(id);
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify(
-              { status: deleted ? "deleted" : "not_found", id: Number(args.id) },
+              { status: deleted ? "deleted" : "not_found", id },
               null,
               2
             ),
@@ -648,7 +685,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     default:
-      throw new Error(`Unknown MindGate tool: ${name}`);
+      throw new ToolInputError(`Unknown MindGate tool: ${name}`);
+    }
+  } catch (error) {
+    // Tool-level failures are reported as MCP tool errors (isError: true),
+    // not as JSON-RPC protocol errors, so agents can read and recover.
+    const message =
+      error instanceof RulesWriteError || error instanceof ToolInputError
+        ? error.message
+        : `MindGate internal error: ${error instanceof Error ? error.message : String(error)}`;
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ status: "error", message }, null, 2),
+        },
+      ],
+      isError: true,
+    };
   }
 });
 

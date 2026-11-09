@@ -37,15 +37,23 @@ We are committed to providing a welcoming and inspiring community for all contri
    npx @modelcontextprotocol/inspector node dist/index.js
    ```
 
+6. **Run the checks (required before submitting a PR):**
+   ```bash
+   npm run typecheck
+   npm test
+   npm run build
+   ```
+
 ---
 
 ## 📋 Pull Request Guidelines
 
 1. **Fork & Branch:** Create a feature branch from `main` (e.g. `feature/sqlite-vector-index` or `fix/node-version-check`).
-2. **TypeScript & Types:** Ensure `npm run build` runs cleanly without any TypeScript errors.
+2. **TypeScript & Tests:** Ensure `npm run typecheck`, `npm test`, and `npm run build` all pass without errors.
 3. **Security First:**
    - MindGate is hardened against **CVE-2026-111497 (Node2Shell)**. Never introduce untrusted `node:zlib` Brotli decompression or unsafe remote execution calls.
    - All I/O must remain local-first (no unauthorized telemetry or external network calls).
+   - Tool inputs must stay validated through `src/validation.ts`; file writes must go through the atomic, backup-creating path in `src/rulesSync.ts`.
 4. **Formatting & Clean Code:** Keep code modular and properly documented.
 5. **Submit PR:** Open a Pull Request on GitHub with a clear description of changes.
 
