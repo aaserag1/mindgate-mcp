@@ -231,6 +231,10 @@ Then open [http://127.0.0.1:4242](http://127.0.0.1:4242) in your browser:
 - **One-Click Compaction:** Compact historical sessions into milestone summaries.
 - **Export & Backup:** Download a full JSON snapshot directly from the UI.
 
+To start the dashboard and open it in your default browser when an MCP client starts MindGate, append `--open-dashboard` to that client's MindGate command arguments. For a local build, use `args = ["D:/mindgate-mcp/dist/index.js", "--open-dashboard"]` in Codex TOML or `"args": ["D:/mindgate-mcp/dist/index.js", "--open-dashboard"]` in Antigravity JSON. Use the path from your existing configuration and restart the client after saving.
+
+The dashboard runs in a separate process on loopback. MCP continues to use stdio. Enabled clients using the same port share one dashboard address, and a remaining client can take over when the first exits. An occupied port never triggers a browser launch. Append `--port 5050` as two arguments to use a different port.
+
 ---
 
 ## 🪝 Git Post-Commit Hook Adapter

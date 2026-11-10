@@ -9,6 +9,7 @@
  * listens on external network interfaces.
  */
 
+import { randomBytes } from "node:crypto";
 import http from "node:http";
 import { MindGateStore, MemoryCategory, MemoryStatus } from "../db/memoryStore.js";
 
@@ -48,22 +49,30 @@ function sendJson(res: http.ServerResponse, statusCode: number, data: unknown): 
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(json),
-    "Access-Control-Allow-Origin": "http://127.0.0.1",
-    "Cache-Control": "no-store",
   });
   res.end(json);
 }
 
-function sendHtml(res: http.ServerResponse, html: string): void {
+function sendHtml(res: http.ServerResponse): void {
+  const nonce = randomBytes(16).toString("base64");
+  const html = getDashboardHtml(nonce);
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",
     "Content-Length": Buffer.byteLength(html),
-    "Cache-Control": "no-store",
+    "Content-Security-Policy": [
+      "default-src 'none'",
+      `script-src 'nonce-${nonce}'`,
+      "style-src 'unsafe-inline'",
+      "connect-src 'self'",
+      "base-uri 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'none'",
+    ].join("; "),
   });
   res.end(html);
 }
 
-export function getDashboardHtml(): string {
+export function getDashboardHtml(nonce = randomBytes(16).toString("base64")): string {
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -205,6 +214,10 @@ export function getDashboardHtml(): string {
     .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: auto; font-size: 0.75rem; color: var(--text-muted); }
     .card-actions { display: flex; gap: 6px; }
     .action-btn { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; }
+    .record-note { font-size: 0.75rem; color: var(--text-muted); }
+    .record-note.warning { color: var(--warning); }
+    .badge-source { background: #58a6ff22; color: #58a6ff; }
+    .badge-preference { background: #23863622; color: #3fb950; }
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000;
@@ -226,18 +239,18 @@ export function getDashboardHtml(): string {
       <span class="badge" style="background:#8957e522;color:#d2a8ff;border-color:#8957e566;">Node2Shell Shield Active</span>
     </div>
     <div class="controls">
-      <button onclick="toggleLang()" id="langBtn">🌐 English</button>
-      <button onclick="toggleTheme()" id="themeBtn">🌓 Theme</button>
-      <button class="btn btn-primary" onclick="openNewModal()">➕ <span id="lblAdd">إضافة قرار / ذكرى</span></button>
-      <button onclick="exportSnapshot()">💾 <span id="lblExport">تصدير Snapshot</span></button>
+      <button id="langBtn">🌐 English</button>
+      <button id="themeBtn">🌓 Theme</button>
+      <button class="btn btn-primary" id="addMemoryBtn">➕ <span id="lblAdd">إضافة قرار / ذكرى</span></button>
+      <button id="exportBtn">💾 <span id="lblExport">تصدير Snapshot</span></button>
     </div>
   </header>
 
   <div class="container">
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('memories')" id="tabMem">📌 الذكريات والقرارات</button>
-      <button class="tab-btn" onclick="switchTab('sessions')" id="tabSes">🔄 سجل تسليم الجلسات (Handoffs)</button>
-      <button class="tab-btn" onclick="switchTab('preferences')" id="tabPref">⚙️ تفضيلات المطور العامة</button>
+      <button class="tab-btn active" id="tabMem">📌 الذكريات والقرارات</button>
+      <button class="tab-btn" id="tabSes">🔄 سجل تسليم الجلسات (Handoffs)</button>
+      <button class="tab-btn" id="tabPref">⚙️ تفضيلات المطور العامة</button>
     </div>
 
     <!-- TAB 1: MEMORIES -->
@@ -245,9 +258,9 @@ export function getDashboardHtml(): string {
       <div class="workspace-bar" id="wsBar"></div>
 
       <div class="search-box">
-        <input type="text" id="searchInput" placeholder="ابحث بالكلمات المفتاحية عبر محرك FTS5 BM25..." oninput="debounceSearch()">
+        <input type="text" id="searchInput" placeholder="ابحث بالكلمات المفتاحية عبر محرك FTS5 BM25...">
         <div class="filter-group">
-          <select id="catFilter" onchange="loadMemories()">
+          <select id="catFilter">
             <option value="">جميع التصنيفات</option>
             <option value="architecture">معمارية (architecture)</option>
             <option value="decision">قرار (decision)</option>
@@ -255,7 +268,7 @@ export function getDashboardHtml(): string {
             <option value="convention">اتفاقية كود (convention)</option>
             <option value="context">سياق (context)</option>
           </select>
-          <select id="statusFilter" onchange="loadMemories()">
+          <select id="statusFilter">
             <option value="active">النشطة فقط (Active)</option>
             <option value="all">الكل (شامل الملغى)</option>
             <option value="superseded">المستبدلة فقط</option>
@@ -271,7 +284,7 @@ export function getDashboardHtml(): string {
     <div id="view-sessions" style="display:none;">
       <div style="display:flex; justify-content:space-between; margin-bottom:16px; align-items:center;">
         <h2 id="lblSesTitle" style="font-size:1.1rem; color:var(--text-heading);">سجل جلسات تسليم السياق</h2>
-        <button class="btn btn-primary" onclick="compactSessions()">🗜️ ضغط وتلخيص الجلسات القديمة (Compact)</button>
+        <button class="btn btn-primary" id="compactBtn">🗜️ ضغط وتلخيص الجلسات القديمة (Compact)</button>
       </div>
       <div id="sessionsList" style="display:flex; flex-direction:column; gap:12px;"></div>
     </div>
@@ -280,7 +293,7 @@ export function getDashboardHtml(): string {
     <div id="view-preferences" style="display:none;">
       <div style="display:flex; justify-content:space-between; margin-bottom:16px; align-items:center;">
         <h2 style="font-size:1.1rem; color:var(--text-heading);">تفضيلات المطور وقواعد الكود العامة</h2>
-        <button class="btn btn-primary" onclick="openPrefModal()">➕ إضافة تفضيل جديد</button>
+        <button class="btn btn-primary" id="addPreferenceBtn">➕ إضافة تفضيل جديد</button>
       </div>
       <div id="prefList" class="grid"></div>
     </div>
@@ -322,17 +335,31 @@ export function getDashboardHtml(): string {
         <input type="number" id="mSupersedes" placeholder="رقم المعرف ID للقرار السابق الذي تم إلغاؤه">
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-        <button onclick="closeModal('memoryModal')">إلغاء</button>
-        <button class="btn btn-primary" onclick="saveMemory()">حفظ في الذاكرة</button>
+        <button id="cancelMemoryBtn">إلغاء</button>
+        <button class="btn btn-primary" id="saveMemoryBtn">حفظ في الذاكرة</button>
       </div>
     </div>
   </div>
 
-  <script>
+  <script nonce="${nonce}">
     let currentWorkspace = 'all';
     let currentTab = 'memories';
     let isRtl = true;
     let searchTimer = null;
+
+    function element(tag, className = '', text = '') {
+      const node = document.createElement(tag);
+      node.className = className;
+      node.textContent = text;
+      return node;
+    }
+
+    function button(className, label, onClick) {
+      const node = element('button', className, label);
+      node.type = 'button';
+      node.addEventListener('click', onClick);
+      return node;
+    }
 
     function toggleTheme() {
       const isLight = document.body.getAttribute('data-theme') === 'light';
@@ -361,10 +388,15 @@ export function getDashboardHtml(): string {
       const res = await fetch('/api/workspaces');
       const wsList = await res.json();
       const bar = document.getElementById('wsBar');
-      bar.innerHTML = '<span class="ws-pill ' + (currentWorkspace === 'all' ? 'active' : '') + '" onclick="selectWorkspace(\\'all\\')">الكل (All)</span>';
-      wsList.forEach(w => {
-        bar.innerHTML += '<span class="ws-pill ' + (currentWorkspace === w.workspace ? 'active' : '') + '" onclick="selectWorkspace(\\'' + w.workspace + '\\')">' + w.workspace + ' (' + w.memory_count + ')</span>';
-      });
+      const pill = (workspace, label) => button(
+        currentWorkspace === workspace ? 'ws-pill active' : 'ws-pill',
+        label,
+        () => selectWorkspace(workspace)
+      );
+      bar.replaceChildren(pill('all', 'الكل (All)'));
+      for (const w of wsList) {
+        bar.append(pill(w.workspace, w.workspace + ' (' + w.memory_count + ')'));
+      }
     }
 
     function selectWorkspace(ws) {
@@ -382,36 +414,36 @@ export function getDashboardHtml(): string {
       const res = await fetch('/api/memories?' + params.toString());
       const data = await res.json();
       const grid = document.getElementById('memoriesGrid');
-      grid.innerHTML = '';
+      grid.replaceChildren();
       if (!data.memories || data.memories.length === 0) {
-        grid.innerHTML = '<div class="empty-state">لا توجد ذكريات تطابق هذا البحث.</div>';
+        grid.append(element('div', 'empty-state', 'لا توجد ذكريات تطابق هذا البحث.'));
         return;
       }
-      data.memories.forEach(m => {
-        const supersededNote = m.supersedes ? '<div style="font-size:0.75rem; color:var(--warning)">⚡ يستبدل القرار #' + m.supersedes + '</div>' : '';
-        const supersededByNote = m.superseded_by ? '<div style="font-size:0.75rem; color:var(--text-muted)">تم استبداله بالقرار #' + m.superseded_by + '</div>' : '';
-        grid.innerHTML += \`
-          <div class="card \${m.status}">
-            <div class="card-header">
-              <span class="card-title">#\${m.id} \${m.title}</span>
-              <span class="cat-badge cat-\${m.category}">\${m.category}</span>
-            </div>
-            <div>
-              <span class="status-badge status-\${m.status}">\${m.status}</span>
-              \${supersededNote}
-              \${supersededByNote}
-            </div>
-            <div class="card-body">\${m.content}</div>
-            <div class="card-footer">
-              <div>\${m.workspace} • \${m.created_at}</div>
-              <div class="card-actions">
-                <button class="action-btn" onclick="deprecateMem(\${m.id})">تعطيل</button>
-                <button class="action-btn btn-danger" onclick="deleteMem(\${m.id})">حذف</button>
-              </div>
-            </div>
-          </div>
-        \`;
-      });
+      for (const m of data.memories) {
+        const card = element('div', 'card ' + m.status);
+        const header = element('div', 'card-header');
+        header.append(
+          element('span', 'card-title', '#' + m.id + ' ' + m.title),
+          element('span', 'cat-badge cat-' + m.category, m.category)
+        );
+        const statusDetails = element('div');
+        statusDetails.append(element('span', 'status-badge status-' + m.status, m.status));
+        if (m.supersedes) {
+          statusDetails.append(element('div', 'record-note warning', '⚡ يستبدل القرار #' + m.supersedes));
+        }
+        if (m.superseded_by) {
+          statusDetails.append(element('div', 'record-note', 'تم استبداله بالقرار #' + m.superseded_by));
+        }
+        const actions = element('div', 'card-actions');
+        actions.append(
+          button('action-btn', 'تعطيل', () => deprecateMem(m.id)),
+          button('action-btn btn-danger', 'حذف', () => deleteMem(m.id))
+        );
+        const footer = element('div', 'card-footer');
+        footer.append(element('div', '', m.workspace + ' • ' + m.created_at), actions);
+        card.append(header, statusDetails, element('div', 'card-body', m.content), footer);
+        grid.append(card);
+      }
     }
 
     function debounceSearch() {
@@ -472,27 +504,30 @@ export function getDashboardHtml(): string {
 
     async function loadSessions() {
       const wsParam = currentWorkspace !== 'all' ? currentWorkspace : '';
-      const res = await fetch('/api/sessions?workspace=' + wsParam);
+      const res = await fetch('/api/sessions?' + new URLSearchParams({ workspace: wsParam }));
       const sessions = await res.json();
       const list = document.getElementById('sessionsList');
-      list.innerHTML = '';
+      list.replaceChildren();
       if (!sessions || sessions.length === 0) {
-        list.innerHTML = '<div class="empty-state">لا توجد جلسات مسجلة بعد.</div>';
+        list.append(element('div', 'empty-state', 'لا توجد جلسات مسجلة بعد.'));
         return;
       }
-      sessions.forEach(s => {
-        list.innerHTML += \`
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">جلسة #\${s.id} (\${s.workspace})</span>
-              <span class="badge" style="background:#58a6ff22; color:#58a6ff;">\${s.source_agent}</span>
-            </div>
-            <div class="card-body">\${s.summary}</div>
-            \${s.active_files ? '<div style="font-size:0.8rem; color:var(--text-muted)">ملفات نشطة: <code>' + s.active_files + '</code></div>' : ''}
-            <div class="card-footer"><div>\${s.created_at}</div></div>
-          </div>
-        \`;
-      });
+      for (const s of sessions) {
+        const card = element('div', 'card');
+        const header = element('div', 'card-header');
+        header.append(
+          element('span', 'card-title', 'جلسة #' + s.id + ' (' + s.workspace + ')'),
+          element('span', 'badge badge-source', s.source_agent)
+        );
+        card.append(header, element('div', 'card-body', s.summary));
+        if (s.active_files) {
+          const note = element('div', 'record-note', 'ملفات نشطة: ');
+          note.append(element('code', '', s.active_files));
+          card.append(note);
+        }
+        card.append(element('div', 'card-footer', s.created_at));
+        list.append(card);
+      }
     }
 
     async function compactSessions() {
@@ -512,25 +547,55 @@ export function getDashboardHtml(): string {
       const res = await fetch('/api/preferences');
       const prefs = await res.json();
       const list = document.getElementById('prefList');
-      list.innerHTML = '';
-      prefs.forEach(p => {
-        list.innerHTML += \`
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">\${p.key}</span>
-              <span class="badge" style="background:#23863622; color:#3fb950;">\${p.category}</span>
-            </div>
-            <div class="card-body">\${p.value}</div>
-            <div class="card-footer"><div>محدث: \${p.updated_at}</div></div>
-          </div>
-        \`;
+      list.replaceChildren();
+      for (const p of prefs) {
+        const card = element('div', 'card');
+        const header = element('div', 'card-header');
+        header.append(
+          element('span', 'card-title', p.key),
+          element('span', 'badge badge-preference', p.category)
+        );
+        card.append(
+          header,
+          element('div', 'card-body', p.value),
+          element('div', 'card-footer', 'محدث: ' + p.updated_at)
+        );
+        list.append(card);
+      }
+    }
+
+    async function addPreference() {
+      const key = prompt('اسم التفضيل:')?.trim();
+      if (!key) return;
+      const value = prompt('قيمة التفضيل:')?.trim();
+      if (!value) return;
+      const res = await fetch('/api/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
       });
+      if (res.ok) loadPreferences();
     }
 
     function exportSnapshot() {
       const wsParam = currentWorkspace !== 'all' ? currentWorkspace : '';
-      window.open('/api/export?workspace=' + wsParam, '_blank');
+      window.open('/api/export?' + new URLSearchParams({ workspace: wsParam }), '_blank', 'noopener');
     }
+
+    document.getElementById('langBtn').addEventListener('click', toggleLang);
+    document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+    document.getElementById('addMemoryBtn').addEventListener('click', openNewModal);
+    document.getElementById('exportBtn').addEventListener('click', exportSnapshot);
+    document.getElementById('tabMem').addEventListener('click', () => switchTab('memories'));
+    document.getElementById('tabSes').addEventListener('click', () => switchTab('sessions'));
+    document.getElementById('tabPref').addEventListener('click', () => switchTab('preferences'));
+    document.getElementById('searchInput').addEventListener('input', debounceSearch);
+    document.getElementById('catFilter').addEventListener('change', loadMemories);
+    document.getElementById('statusFilter').addEventListener('change', loadMemories);
+    document.getElementById('compactBtn').addEventListener('click', compactSessions);
+    document.getElementById('addPreferenceBtn').addEventListener('click', addPreference);
+    document.getElementById('cancelMemoryBtn').addEventListener('click', () => closeModal('memoryModal'));
+    document.getElementById('saveMemoryBtn').addEventListener('click', saveMemory);
 
     // Init
     loadWorkspaces();
@@ -550,18 +615,47 @@ export function startDashboardServer(options: {
   close: () => Promise<void>;
 }> {
   const store = options.store || new MindGateStore();
-  const desiredPort = options.port || 4242;
+  const desiredPort = options.port ?? 4242;
 
   return new Promise((resolve, reject) => {
     const server = http.createServer(async (req, res) => {
       try {
+        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+
+        const address = server.address();
+        const port = typeof address === "object" && address ? address.port : desiredPort;
+        const host = req.headers.host;
+        // DNS rebinding can reach loopback with an attacker-controlled Host.
+        if (host !== `127.0.0.1:${port}` && host !== `localhost:${port}`) {
+          sendJson(res, 403, { error: "Invalid dashboard host." });
+          return;
+        }
+
         const parsedUrl = new URL(req.url || "/", "http://127.0.0.1");
         const pathname = parsedUrl.pathname || "/";
         const method = req.method || "GET";
+        const origin = req.headers.origin;
+        const expectedOrigin = `http://${host}`;
+        const fetchSite = req.headers["sec-fetch-site"];
+        const writesData = method === "POST" || method === "DELETE";
+        if (
+          (origin !== undefined && origin !== expectedOrigin) ||
+          (writesData && origin !== expectedOrigin) ||
+          (pathname.startsWith("/api/") && (fetchSite === "cross-site" || fetchSite === "same-site"))
+        ) {
+          sendJson(res, 403, { error: "Dashboard API requests must come from the dashboard origin." });
+          return;
+        }
+        if (method === "POST" && req.headers["content-type"]?.split(";")[0].trim().toLowerCase() !== "application/json") {
+          sendJson(res, 415, { error: "Expected Content-Type: application/json." });
+          return;
+        }
 
         // 1. Dashboard UI
         if (pathname === "/" && method === "GET") {
-          sendHtml(res, getDashboardHtml());
+          sendHtml(res);
           return;
         }
 

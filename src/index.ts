@@ -26,6 +26,7 @@ import { fileURLToPath } from "node:url";
 import { MindGateStore } from "./db/memoryStore.js";
 import { writeRulesFile, RulesWriteError } from "./rulesSync.js";
 import { startDashboardServer } from "./ui/dashboardServer.js";
+import { launchDashboardCompanion, runDashboardCompanion } from "./ui/dashboardCompanion.js";
 import {
   installGitHook,
   uninstallGitHook,
@@ -118,15 +119,23 @@ if (process.argv.includes("init") || process.argv.includes("--init")) {
   process.exit(0);
 }
 
-if (process.argv.includes("ui") || process.argv.includes("dashboard")) {
+function dashboardPort(): number {
   const portIndex = process.argv.indexOf("--port");
-  const port =
-    portIndex !== -1 && process.argv[portIndex + 1]
-      ? parseInt(process.argv[portIndex + 1], 10)
-      : 4242;
+  if (portIndex === -1) return 4242;
+  const portArg = process.argv[portIndex + 1] ?? "";
+  const port = Number(portArg);
+  if (!/^\d+$/.test(portArg) || port > 65535) {
+    throw new Error("--port must be an integer between 0 and 65535.");
+  }
+  return port;
+}
+
+if (process.argv.includes("ui") || process.argv.includes("dashboard")) {
+  const port = dashboardPort();
   const store = new MindGateStore();
-  startDashboardServer({ port, store })
-    .then(({ url }) => {
+  const start = process.argv.includes("--mcp-companion")
+    ? runDashboardCompanion(port, store)
+    : startDashboardServer({ port, store }).then(({ url }) => {
       console.log(`
 =======================================================================
 🧠 MindGate Web Dashboard (بوابة العقل)
@@ -134,11 +143,11 @@ if (process.argv.includes("ui") || process.argv.includes("dashboard")) {
 =======================================================================
 Press Ctrl+C to stop the dashboard.
 `);
-    })
-    .catch((err) => {
-      console.error("[MindGate UI Error]", err);
-      process.exit(1);
     });
+  start.catch((err) => {
+    console.error("[MindGate UI Error]", err);
+    process.exit(1);
+  });
 } else if (process.argv.includes("git-hook")) {
   const isInstall = process.argv.includes("install");
   const isUninstall = process.argv.includes("uninstall");
@@ -1032,4 +1041,11 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  if (process.argv.includes("--open-dashboard")) {
+    try {
+      launchDashboardCompanion(__filename, dashboardPort());
+    } catch (err) {
+      console.error("[MindGate] Could not start dashboard:", err);
+    }
+  }
 }

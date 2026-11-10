@@ -85,6 +85,20 @@ test("deprecateMemory marks record as deprecated with reason", () => {
   assert.ok(all.memories.some((m) => m.id === dec.record.id));
 });
 
+test("deprecateMemory redacts secrets in the persisted reason", () => {
+  const { record } = store.rememberDecision({
+    workspace: "redaction-test",
+    title: "Retired integration",
+    content: "Integration details.",
+  });
+  const fakeToken = "ghp_" + "a".repeat(36);
+  store.deprecateMemory(record.id, `Replaced token ${fakeToken}`);
+
+  const [saved] = store.recallContext({ workspace: "redaction-test", status: "deprecated" }).memories;
+  assert.ok(saved.content.includes("[Deprecated: Replaced token [REDACTED:github_token]]"));
+  assert.ok(!saved.content.includes(fakeToken));
+});
+
 test("compactMemories aggregates historical sessions into milestone session", () => {
   const ws = "compact-ws";
   // Add 7 sessions

@@ -535,7 +535,7 @@ export class MindGateStore {
       .get(id) as MemoryRecord | undefined;
     if (!existing) return null;
 
-    const contentSuffix = reason ? `\n\n[Deprecated: ${reason}]` : "";
+    const contentSuffix = reason ? `\n\n[Deprecated: ${redactSecrets(reason).value}]` : "";
     this.db
       .prepare(
         `UPDATE memories
