@@ -1,10 +1,10 @@
-# 🧠 MindGate MCP (`v1.2.1`) — بوابة العقل
+# 🧠 MindGate MCP (`v1.3.0`) — بوابة العقل
 
 [![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
 [![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.2.1](https://img.shields.io/badge/MCP-v1.2.1-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[![Version: 1.3.0](https://img.shields.io/badge/MCP-v1.3.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **Local-First Persistent Memory & Context Gateway for AI Agents (Model Context Protocol).**
 
@@ -21,6 +21,10 @@ AI coding and workflow agents (**Antigravity**, **Cursor**, **Claude Desktop**, 
 
 **MindGate MCP** addresses both in a single, zero-cloud local server:
 - 🗄️ **Blazing-Fast Local SQLite + FTS5 BM25 Search:** Instant full-text retrieval of architectural decisions, bugfixes, conventions, preferences, and session handoffs.
+- 🔄 **Decision Superseding & Lifecycle Tracking:** Supersede obsolete architectural decisions (`supersedes`) or mark them deprecated (`deprecate_memory`). Agents never follow stale patterns, while historical audit trails remain preserved.
+- 📦 **Historical Memory Compaction:** Automatically compact long chains of historical session handoffs into milestone summaries (`compact_memories`) to preserve context without inflating token usage.
+- 🖥️ **Built-in Local Web Dashboard:** Zero-dependency HTTP UI (`mindgate-mcp ui` or `npm run ui`) running locally on `http://127.0.0.1:4242` with Dark/Light themes, Arabic RTL & English LTR switch, live FTS5 search, workspace filtering, and visual context management.
+- 🪝 **Git Post-Commit Context Adapter:** Seamless commit tracking (`mindgate-mcp git-hook install`) that logs commit messages and active files directly into MindGate without workflow disruption.
 - 🔄 **Auto-Compiled Workspace Rules (`AGENTS.md` / `.cursorrules` / `CLAUDE.md`):** Compiles your stored decisions, conventions, and bugfixes into a structured rules file so any AI agent immediately inherits project context. Writes are atomic, existing files are backed up (`.bak-<timestamp>`), and hand-written files are never overwritten without `force: true`.
 - ✏️ **In-Place Memory Updates & Portable JSON Snapshots:** Update evolving decisions in place (`update_memory`) while keeping FTS5 indexes in sync, and export full JSON backups (`export_memory_snapshot`).
 - 🔒 **Secret Redaction On Write:** Well-known token patterns (OpenAI, GitHub, AWS, Slack, Google, JWT, PEM private keys) are masked with `[REDACTED:<kind>]` before anything touches disk — in memories, session handoffs, and preferences. Tool responses report a `redacted_secrets` count. Disable with `MINDGATE_REDACT_SECRETS=false` (not recommended).
@@ -84,14 +88,17 @@ flowchart TB
 
 ---
 
-## 🛠️ MCP Tools Included (10 Tools)
+## 🛠️ MCP Tools Included (13 Tools)
 
 | Tool Name | Description |
 | :--- | :--- |
-| `remember_decision` | Store a persistent memory (architecture / decision / bugfix / convention / context) with automatic secret redaction |
-| `update_memory` | Update an existing memory in-place by ID while keeping FTS5 search indexes in sync |
-| `recall_context` | Search memories with FTS5 BM25 full-text ranking + workspace/category filters. When no query matches, falls back to most-recent memories and flags it (`search.fallback: true`) |
+| `remember_decision` | Store a persistent memory (architecture / decision / bugfix / convention / context) with automatic secret redaction and optional `supersedes` parameter to invalidate previous decisions |
+| `update_memory` | Update an existing memory in-place by ID with optional `status` (`active`/`superseded`/`deprecated`) while keeping FTS5 search indexes in sync |
+| `recall_context` | Search memories with FTS5 BM25 ranking, workspace/category filters, and lifecycle `status` filter (`active`/`superseded`/`deprecated`/`all`, default: `active`). When no query matches, falls back to most-recent memories and flags it (`search.fallback: true`) |
+| `deprecate_memory` | Mark an existing memory as deprecated by ID with an optional reason, excluding it from active recall without deletion |
+| `compact_memories` | Compact historical session handoffs into consolidated milestone summaries to reduce token overhead while retaining full context |
 | `log_session_summary` | Save a structured session handoff (summary, next steps, active files) for the next agent to resume |
+| `get_dashboard_url` | Get the URL of the local MindGate Web Dashboard (`http://127.0.0.1:4242`) |
 | `sync_workspace_rules` | Generate `AGENTS.md`, `.cursorrules`, `CLAUDE.md`, `.windsurfrules`, or `MINDGATE_CONTEXT.md` from stored memories. Atomic write, `.bak` backup, hand-written files protected unless `force: true` |
 | `export_memory_snapshot` | Export a portable JSON backup of memories, session handoffs, and preferences |
 | `set_user_preference` | Save or update a persistent developer preference (`key`/`value`) |
@@ -198,6 +205,50 @@ npm run init-config
   }
 }
 ```
+
+---
+
+## 🖥️ Local Web Dashboard
+
+MindGate v1.3.0 includes a zero-dependency, local-only web dashboard. It binds strictly to `127.0.0.1` so it is never exposed to external networks.
+
+```bash
+# Launch dashboard from CLI (defaults to port 4242)
+mindgate-mcp ui
+
+# Or specify a custom port
+mindgate-mcp ui --port 5050
+
+# When running from cloned source
+npm run ui
+```
+
+Then open [http://127.0.0.1:4242](http://127.0.0.1:4242) in your browser:
+- **Visual Memory Manager:** Search via FTS5 BM25 in real time, view status badges (`active`, `superseded`, `deprecated`), filter by workspace and category.
+- **Bi-Directional Language Support:** One-click toggle between English (LTR) and Arabic (RTL).
+- **Dark & Light Modes:** Smooth, accessible palette matching modern developer tools.
+- **Lifecycle Management:** Add new memories with `supersedes` links, mark decisions deprecated, or delete memories.
+- **One-Click Compaction:** Compact historical sessions into milestone summaries.
+- **Export & Backup:** Download a full JSON snapshot directly from the UI.
+
+---
+
+## 🪝 Git Post-Commit Hook Adapter
+
+Automatically capture commit messages and touched files into your workspace memory without breaking your flow:
+
+```bash
+# Install hook into current Git repository
+mindgate-mcp git-hook install
+
+# Specify custom workspace name
+mindgate-mcp git-hook install --workspace my-project
+
+# Uninstall hook cleanly
+mindgate-mcp git-hook uninstall
+```
+
+The hook appends a non-blocking background task to `.git/hooks/post-commit` cleanly bounded by `# --- mindgate:post-commit ---` sentinels, preserving any existing Git hooks you have.
 
 ---
 

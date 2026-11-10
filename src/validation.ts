@@ -6,7 +6,7 @@
  * local database from being bloated by accident or abuse.
  */
 
-import { MemoryCategory } from "./db/memoryStore.js";
+import { MemoryCategory, MemoryStatus } from "./db/memoryStore.js";
 
 /** Error thrown for invalid tool input; surfaced to the caller as an MCP tool error (isError). */
 export class ToolInputError extends Error {
@@ -148,3 +148,55 @@ export function optionalCategory(value: unknown): MemoryCategory | undefined {
   }
   return value as MemoryCategory;
 }
+
+const MEMORY_STATUSES: ReadonlySet<string> = new Set([
+  "active",
+  "superseded",
+  "deprecated",
+]);
+
+export function optionalMemoryStatus(value: unknown): MemoryStatus | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string" || !MEMORY_STATUSES.has(value)) {
+    throw new ToolInputError(
+      `Field "status" must be one of: ${[...MEMORY_STATUSES].join(", ")}.`
+    );
+  }
+  return value as MemoryStatus;
+}
+
+export function optionalRecallStatus(value: unknown): MemoryStatus | "all" | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (value === "all") return "all";
+  if (typeof value !== "string" || !MEMORY_STATUSES.has(value)) {
+    throw new ToolInputError(
+      `Field "status" must be one of: all, ${[...MEMORY_STATUSES].join(", ")}.`
+    );
+  }
+  return value as MemoryStatus;
+}
+
+export function optionalPositiveIntArray(
+  value: unknown,
+  field: string,
+  maxItems = 20
+): number[] | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "number") {
+    const parsed = optionalPositiveInt(value, field);
+    return parsed ? [parsed] : undefined;
+  }
+  if (!Array.isArray(value)) {
+    throw new ToolInputError(`Field "${field}" must be a positive integer or array of positive integers.`);
+  }
+  if (value.length > maxItems) {
+    throw new ToolInputError(`Field "${field}" allows at most ${maxItems} items.`);
+  }
+  return value.map((item, index) => {
+    if (typeof item !== "number" || !Number.isFinite(item) || !Number.isInteger(item) || item <= 0) {
+      throw new ToolInputError(`Field "${field}[${index}]" must be a positive integer.`);
+    }
+    return item;
+  });
+}
+

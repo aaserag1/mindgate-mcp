@@ -24,6 +24,8 @@ export type MemoryCategory =
   | "convention"
   | "context";
 
+export type MemoryStatus = "active" | "superseded" | "deprecated";
+
 export interface MemoryRecord {
   id: number;
   workspace: string;
@@ -32,6 +34,9 @@ export interface MemoryRecord {
   content: string;
   tags: string;
   source_agent: string;
+  status: MemoryStatus;
+  supersedes: string;
+  superseded_by: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -103,6 +108,9 @@ export class MindGateStore {
         content TEXT NOT NULL,
         tags TEXT NOT NULL DEFAULT '',
         source_agent TEXT NOT NULL DEFAULT 'unknown',
+        status TEXT NOT NULL DEFAULT 'active',
+        supersedes TEXT NOT NULL DEFAULT '',
+        superseded_by INTEGER DEFAULT NULL,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
@@ -155,6 +163,20 @@ export class MindGateStore {
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `);
+
+    // In-place schema migration for existing databases created before v1.3.0
+    const columns = this.db.pragma("table_info(memories)") as Array<{ name: string }>;
+    const columnNames = new Set(columns.map((c) => c.name));
+    if (!columnNames.has("status")) {
+      this.db.exec("ALTER TABLE memories ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+    }
+    if (!columnNames.has("supersedes")) {
+      this.db.exec("ALTER TABLE memories ADD COLUMN supersedes TEXT NOT NULL DEFAULT ''");
+    }
+    if (!columnNames.has("superseded_by")) {
+      this.db.exec("ALTER TABLE memories ADD COLUMN superseded_by INTEGER DEFAULT NULL");
+    }
+    this.db.exec("CREATE INDEX IF NOT EXISTS idx_memories_status ON memories(status)");
   }
 
   /** Redacts secrets in a batch of strings, returning redacted values + total replacement count. */
@@ -175,6 +197,7 @@ export class MindGateStore {
     content: string;
     tags?: string[];
     sourceAgent?: string;
+    supersedes?: number[] | number;
   }): { record: MemoryRecord; redactions: number } {
     const workspace =
       params.workspace || process.env.MINDGATE_DEFAULT_WORKSPACE || "global";
@@ -189,15 +212,32 @@ export class MindGateStore {
     const [title, content] = values;
     const tags = values.slice(2).join(", ");
 
+    const supersededIds = params.supersedes !== undefined
+      ? (Array.isArray(params.supersedes) ? params.supersedes : [params.supersedes])
+      : [];
+    const supersedesStr = supersededIds.join(", ");
+
     const stmt = this.db.prepare(`
-      INSERT INTO memories (workspace, category, title, content, tags, source_agent)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO memories (workspace, category, title, content, tags, source_agent, status, supersedes)
+      VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
     `);
-    const info = stmt.run(workspace, category, title, content, tags, sourceAgent);
+    const info = stmt.run(workspace, category, title, content, tags, sourceAgent, supersedesStr);
+    const newId = Number(info.lastInsertRowid);
+
+    if (supersededIds.length > 0) {
+      const updateOldStmt = this.db.prepare(`
+        UPDATE memories
+        SET status = 'superseded', superseded_by = ?, updated_at = datetime('now')
+        WHERE id = ?
+      `);
+      for (const oldId of supersededIds) {
+        updateOldStmt.run(newId, oldId);
+      }
+    }
 
     const record = this.db
       .prepare("SELECT * FROM memories WHERE id = ?")
-      .get(info.lastInsertRowid) as MemoryRecord;
+      .get(newId) as MemoryRecord;
     return { record, redactions };
   }
 
@@ -209,6 +249,9 @@ export class MindGateStore {
     content?: string;
     tags?: string[];
     sourceAgent?: string;
+    status?: MemoryStatus;
+    supersedes?: number[];
+    superseded_by?: number | null;
   }): { record: MemoryRecord; redactions: number } | null {
     const existing = this.db
       .prepare("SELECT * FROM memories WHERE id = ?")
@@ -236,6 +279,15 @@ export class MindGateStore {
     const updatedWorkspace = params.workspace ?? existing.workspace;
     const updatedCategory = params.category ?? existing.category;
     const updatedAgent = params.sourceAgent ?? existing.source_agent;
+    const updatedStatus = params.status ?? existing.status;
+    const updatedSupersedes =
+      params.supersedes !== undefined
+        ? params.supersedes.join(", ")
+        : existing.supersedes;
+    const updatedSupersededBy =
+      params.superseded_by !== undefined
+        ? params.superseded_by
+        : existing.superseded_by;
 
     this.db
       .prepare(
@@ -247,6 +299,9 @@ export class MindGateStore {
           content = ?,
           tags = ?,
           source_agent = ?,
+          status = ?,
+          supersedes = ?,
+          superseded_by = ?,
           updated_at = datetime('now')
       WHERE id = ?
     `
@@ -258,6 +313,9 @@ export class MindGateStore {
         updatedContent,
         updatedTags,
         updatedAgent,
+        updatedStatus,
+        updatedSupersedes,
+        updatedSupersededBy,
         params.id
       );
 
@@ -273,6 +331,7 @@ export class MindGateStore {
     category?: MemoryCategory;
     limit?: number;
     includeGlobal?: boolean;
+    status?: MemoryStatus | "all";
   }): {
     memories: MemoryRecord[];
     latestSession: SessionRecord | null;
@@ -289,6 +348,8 @@ export class MindGateStore {
         ? [workspace, "global"]
         : [workspace];
     const wsPlaceholders = workspaces.map(() => "?").join(", ");
+
+    const targetStatus = params.status === "all" ? null : (params.status || "active");
 
     const queryText = (params.query || "").trim();
     let memories: MemoryRecord[] = [];
@@ -312,11 +373,13 @@ export class MindGateStore {
           WHERE memories_fts MATCH ?
             AND m.workspace IN (${wsPlaceholders})
             ${params.category ? "AND m.category = ?" : ""}
+            ${targetStatus ? "AND m.status = ?" : ""}
           ORDER BY bm25(memories_fts) ASC, m.updated_at DESC
           LIMIT ?
         `;
         const bindArgs: unknown[] = [sanitizedQuery, ...workspaces];
         if (params.category) bindArgs.push(params.category);
+        if (targetStatus) bindArgs.push(targetStatus);
         bindArgs.push(limit);
 
         memories = this.db.prepare(sql).all(...bindArgs) as MemoryRecord[];
@@ -333,11 +396,13 @@ export class MindGateStore {
         FROM memories
         WHERE workspace IN (${wsPlaceholders})
           ${params.category ? "AND category = ?" : ""}
+          ${targetStatus ? "AND status = ?" : ""}
         ORDER BY updated_at DESC, id DESC
         LIMIT ?
       `;
       const bindArgs: unknown[] = [...workspaces];
       if (params.category) bindArgs.push(params.category);
+      if (targetStatus) bindArgs.push(targetStatus);
       bindArgs.push(limit);
 
       memories = this.db.prepare(sql).all(...bindArgs) as MemoryRecord[];
@@ -464,6 +529,139 @@ export class MindGateStore {
     return info.changes > 0;
   }
 
+  public deprecateMemory(id: number, reason?: string): MemoryRecord | null {
+    const existing = this.db
+      .prepare("SELECT * FROM memories WHERE id = ?")
+      .get(id) as MemoryRecord | undefined;
+    if (!existing) return null;
+
+    const contentSuffix = reason ? `\n\n[Deprecated: ${reason}]` : "";
+    this.db
+      .prepare(
+        `UPDATE memories
+         SET status = 'deprecated',
+             content = content || ?,
+             updated_at = datetime('now')
+         WHERE id = ?`
+      )
+      .run(contentSuffix, id);
+
+    return this.db
+      .prepare("SELECT * FROM memories WHERE id = ?")
+      .get(id) as MemoryRecord;
+  }
+
+  public getSessions(params: {
+    workspace?: string;
+    limit?: number;
+  } = {}): SessionRecord[] {
+    const workspace =
+      params.workspace || process.env.MINDGATE_DEFAULT_WORKSPACE || "global";
+    const limit = Math.min(Math.max(params.limit || 20, 1), 100);
+    return this.db
+      .prepare(
+        "SELECT * FROM sessions WHERE workspace = ? ORDER BY id DESC LIMIT ?"
+      )
+      .all(workspace, limit) as SessionRecord[];
+  }
+
+  public compactMemories(params: {
+    workspace?: string;
+    olderThanDays?: number;
+    maxSessionsToKeep?: number;
+    sourceAgent?: string;
+  } = {}): {
+    compacted: boolean;
+    sessionsCompacted: number;
+    retainedSessions: number;
+    milestoneSession: SessionRecord | null;
+    message: string;
+  } {
+    const workspace =
+      params.workspace || process.env.MINDGATE_DEFAULT_WORKSPACE || "global";
+    const maxSessionsToKeep = Math.max(params.maxSessionsToKeep ?? 5, 1);
+    const sourceAgent = params.sourceAgent || "mindgate-compactor";
+
+    // Fetch all sessions for this workspace in ascending chronological order
+    const allSessions = this.db
+      .prepare("SELECT * FROM sessions WHERE workspace = ? ORDER BY id ASC")
+      .all(workspace) as SessionRecord[];
+
+    if (allSessions.length <= maxSessionsToKeep) {
+      return {
+        compacted: false,
+        sessionsCompacted: 0,
+        retainedSessions: allSessions.length,
+        milestoneSession: null,
+        message: `Workspace "${workspace}" has only ${allSessions.length} session(s), below retention threshold of ${maxSessionsToKeep}. No compaction needed.`,
+      };
+    }
+
+    const sessionsToCompact = allSessions.slice(
+      0,
+      allSessions.length - maxSessionsToKeep
+    );
+    const retainedSessionsCount = maxSessionsToKeep;
+
+    // Aggregate summary and active files
+    const summaries = sessionsToCompact.map(
+      (s) => `- [${s.created_at}] (${s.source_agent}): ${s.summary}`
+    );
+    const activeFilesSet = new Set<string>();
+    for (const s of sessionsToCompact) {
+      if (s.active_files) {
+        s.active_files
+          .split(",")
+          .map((f) => f.trim())
+          .filter(Boolean)
+          .forEach((f) => activeFilesSet.add(f));
+      }
+    }
+
+    const firstDate = sessionsToCompact[0].created_at;
+    const lastDate =
+      sessionsToCompact[sessionsToCompact.length - 1].created_at;
+    const milestoneSummary =
+      `[Compacted Milestone: ${sessionsToCompact.length} historical sessions from ${firstDate} to ${lastDate}]\n` +
+      summaries.join("\n");
+    const activeFilesStr = Array.from(activeFilesSet).join(", ");
+
+    // Atomic transaction: Insert compacted milestone session, delete old sessions
+    const insertStmt = this.db.prepare(`
+      INSERT INTO sessions (workspace, source_agent, summary, next_steps, active_files, created_at)
+      VALUES (?, ?, ?, '', ?, ?)
+    `);
+    const deleteStmt = this.db.prepare("DELETE FROM sessions WHERE id = ?");
+
+    let newSessionId = 0;
+    const transaction = this.db.transaction(() => {
+      const info = insertStmt.run(
+        workspace,
+        sourceAgent,
+        milestoneSummary,
+        activeFilesStr,
+        lastDate
+      );
+      newSessionId = Number(info.lastInsertRowid);
+      for (const s of sessionsToCompact) {
+        deleteStmt.run(s.id);
+      }
+    });
+    transaction();
+
+    const milestoneSession = this.db
+      .prepare("SELECT * FROM sessions WHERE id = ?")
+      .get(newSessionId) as SessionRecord;
+
+    return {
+      compacted: true,
+      sessionsCompacted: sessionsToCompact.length,
+      retainedSessions: retainedSessionsCount + 1,
+      milestoneSession,
+      message: `Successfully compacted ${sessionsToCompact.length} sessions in "${workspace}" into milestone session #${newSessionId}.`,
+    };
+  }
+
   /**
    * Generates a formatted Markdown rules file (AGENTS.md / .cursorrules / CLAUDE.md)
    * from stored project memories, global developer preferences, and latest session handoff.
@@ -510,7 +708,8 @@ export class MindGateStore {
       lines.push("## 🏗️ Architecture & Core Decisions");
       for (const m of archAndDecisions) {
         const tagSuffix = m.tags ? ` *(Tags: ${m.tags})*` : "";
-        lines.push(`### [ID #${m.id}] ${m.title}${tagSuffix}`);
+        const supersedesNote = m.supersedes ? ` *(Supersedes: #${m.supersedes})*` : "";
+        lines.push(`### [ID #${m.id}] ${m.title}${tagSuffix}${supersedesNote}`);
         lines.push(m.content);
         lines.push("");
       }

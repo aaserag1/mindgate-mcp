@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MindGate (بوابة العقل) v1.2.1 — Model Context Protocol (MCP) Server
+ * MindGate (بوابة العقل) v1.3.0 — Model Context Protocol (MCP) Server
  *
  * A unified, local-first memory & context gateway for Antigravity, OpenCode,
  * Codex, Cursor, and Claude. Mitigates Node2Shell (CVE-2026-111497).
@@ -25,6 +25,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { MindGateStore } from "./db/memoryStore.js";
 import { writeRulesFile, RulesWriteError } from "./rulesSync.js";
+import { startDashboardServer } from "./ui/dashboardServer.js";
+import {
+  installGitHook,
+  uninstallGitHook,
+  captureCommitHandoff,
+} from "./gitHook.js";
 import {
   LIMITS,
   ToolInputError,
@@ -36,6 +42,9 @@ import {
   optionalLimit,
   optionalStringArray,
   optionalCategory,
+  optionalMemoryStatus,
+  optionalRecallStatus,
+  optionalPositiveIntArray,
 } from "./validation.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,7 +61,7 @@ function printInitGuide(): void {
   const scriptPath = path.resolve(__filename).replace(/\\/g, "/");
   console.log(`
 =======================================================================
-🧠 MindGate v1.2.1 (بوابة العقل) — Configuration Generator
+🧠 MindGate v1.3.0 (بوابة العقل) — Configuration Generator
 🛡️ Security Status: ${securityStatus.advisory}
 =======================================================================
 
@@ -109,21 +118,84 @@ if (process.argv.includes("init") || process.argv.includes("--init")) {
   process.exit(0);
 }
 
-const store = new MindGateStore();
-
-const server = new Server(
-  {
-    name: "mindgate-mcp",
-    version: "1.2.1",
-  },
-  {
-    capabilities: {
-      tools: {},
-      resources: {},
-      prompts: {},
-    },
+if (process.argv.includes("ui") || process.argv.includes("dashboard")) {
+  const portIndex = process.argv.indexOf("--port");
+  const port =
+    portIndex !== -1 && process.argv[portIndex + 1]
+      ? parseInt(process.argv[portIndex + 1], 10)
+      : 4242;
+  const store = new MindGateStore();
+  startDashboardServer({ port, store })
+    .then(({ url }) => {
+      console.log(`
+=======================================================================
+🧠 MindGate Web Dashboard (بوابة العقل)
+🚀 Running at: ${url} (Strictly bound to 127.0.0.1)
+=======================================================================
+Press Ctrl+C to stop the dashboard.
+`);
+    })
+    .catch((err) => {
+      console.error("[MindGate UI Error]", err);
+      process.exit(1);
+    });
+} else if (process.argv.includes("git-hook")) {
+  const isInstall = process.argv.includes("install");
+  const isUninstall = process.argv.includes("uninstall");
+  const targetDir = process.argv.find(
+    (a, i) =>
+      i > 1 &&
+      !a.startsWith("-") &&
+      a !== "git-hook" &&
+      a !== "install" &&
+      a !== "uninstall"
+  );
+  if (isInstall) {
+    const res = installGitHook(targetDir, __filename);
+    console.log(res.message);
+    process.exit(res.success ? 0 : 1);
+  } else if (isUninstall) {
+    const res = uninstallGitHook(targetDir);
+    console.log(res.message);
+    process.exit(res.success ? 0 : 1);
+  } else {
+    console.log("Usage: mindgate-mcp git-hook [install|uninstall] [repo-path]");
+    process.exit(1);
   }
-);
+} else if (process.argv.includes("capture-commit")) {
+  const repoDir = process.argv.find(
+    (a, i) => i > 1 && !a.startsWith("-") && a !== "capture-commit"
+  );
+  const store = new MindGateStore();
+  const res = captureCommitHandoff(repoDir, store);
+  if (res.logged) {
+    console.log(`[MindGate] ${res.message}`);
+  }
+  process.exit(0);
+} else {
+  // Proceed with standard MCP Stdio Server
+  runMcpServer().catch((err) => {
+    console.error("[MindGate Fatal Error]", err);
+    process.exit(1);
+  });
+}
+
+async function runMcpServer(): Promise<void> {
+  const store = new MindGateStore();
+
+  const server = new Server(
+    {
+      name: "mindgate-mcp",
+      version: "1.3.0",
+    },
+    {
+      capabilities: {
+        tools: {},
+        resources: {},
+        prompts: {},
+      },
+    }
+  );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -169,6 +241,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description:
                 "Name of the AI tool recording this memory (e.g. 'antigravity', 'opencode', 'codex').",
+            },
+            supersedes: {
+              type: "array",
+              items: { type: "number" },
+              description:
+                "Optional numeric ID(s) of older memory records superseded/deprecated by this new decision.",
             },
           },
           required: ["title", "content"],
@@ -218,6 +296,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description:
                 "Name of the AI tool updating this memory (e.g. 'antigravity').",
             },
+            status: {
+              type: "string",
+              enum: ["active", "superseded", "deprecated"],
+              description: "Optional updated status.",
+            },
+            supersedes: {
+              type: "array",
+              items: { type: "number" },
+              description: "Optional list of memory IDs this record supersedes.",
+            },
           },
           required: ["id"],
         },
@@ -257,6 +345,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "boolean",
               description:
                 "Whether to also include memories from the 'global' workspace (default true).",
+            },
+            status: {
+              type: "string",
+              enum: ["active", "superseded", "deprecated", "all"],
+              description:
+                "Filter by memory status (default 'active'). Pass 'all' to include superseded and deprecated memories.",
             },
           },
         },
@@ -415,6 +509,58 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["id"],
         },
       },
+      {
+        name: "deprecate_memory",
+        description:
+          "Mark an architectural decision or convention as deprecated so AI agents know not to follow it anymore, while preserving it for historical auditing.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "number",
+              description: "Numeric ID of the memory record to deprecate.",
+            },
+            reason: {
+              type: "string",
+              description: "Optional explanation of why this decision is deprecated.",
+            },
+          },
+          required: ["id"],
+        },
+      },
+      {
+        name: "compact_memories",
+        description:
+          "Compact and consolidate historical cross-agent sessions in a workspace into a dense milestone record, preventing context window bloat in long-running projects.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            workspace: {
+              type: "string",
+              description: "Project workspace identifier.",
+            },
+            max_sessions_to_keep: {
+              type: "number",
+              description:
+                "Number of most recent sessions to keep uncompacted (default: 5).",
+            },
+          },
+        },
+      },
+      {
+        name: "get_dashboard_url",
+        description:
+          "Get the local URL and launch instructions for the MindGate visual web dashboard (localhost:4242).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            port: {
+              type: "number",
+              description: "Preferred port (default: 4242).",
+            },
+          },
+        },
+      },
     ],
   };
 });
@@ -434,6 +580,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: requiredString(args.content, "content", LIMITS.contentMax),
         tags: optionalStringArray(args.tags, "tags", LIMITS.tagsMax, LIMITS.tagMax) ?? [],
         sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
+        supersedes: optionalPositiveIntArray(args.supersedes, "supersedes"),
       });
       return {
         content: [
@@ -467,6 +614,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: optionalString(args.content, "content", LIMITS.contentMax),
         tags: optionalStringArray(args.tags, "tags", LIMITS.tagsMax, LIMITS.tagMax),
         sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
+        status: optionalMemoryStatus(args.status),
+        supersedes: optionalPositiveIntArray(args.supersedes, "supersedes"),
       });
       return {
         content: [
@@ -501,6 +650,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         limit: optionalLimit(args.limit, "limit", 50) ?? 10,
         includeGlobal:
           optionalBoolean(args.include_global, "include_global") ?? true,
+        status: optionalRecallStatus(args.status),
       });
       return {
         content: [
@@ -684,6 +834,75 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+    case "deprecate_memory": {
+      const id = optionalPositiveInt(args.id, "id");
+      if (id === undefined) {
+        throw new ToolInputError('Missing or invalid required field: "id" (positive integer expected).');
+      }
+      const reason = optionalString(args.reason, "reason", LIMITS.titleMax);
+      const record = store.deprecateMemory(id, reason);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              record
+                ? {
+                    status: "deprecated",
+                    message: `Memory #${id} marked as deprecated in MindGate (بوابة العقل).`,
+                    record,
+                  }
+                : {
+                    status: "not_found",
+                    message: `No memory found with ID #${id}.`,
+                    id,
+                  },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
+    case "compact_memories": {
+      const workspace = optionalString(args.workspace, "workspace", LIMITS.workspaceMax);
+      const maxKeep = optionalPositiveInt(args.max_sessions_to_keep, "max_sessions_to_keep") ?? 5;
+      const result = store.compactMemories({
+        workspace,
+        maxSessionsToKeep: maxKeep,
+        sourceAgent: "mindgate-compact",
+      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
+
+    case "get_dashboard_url": {
+      const port = optionalPositiveInt(args.port, "port") ?? 4242;
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                dashboard_url: `http://127.0.0.1:${port}`,
+                instructions:
+                  "To launch the visual MindGate Dashboard, run in your terminal: mindgate-mcp ui (or npm run ui). It strictly binds to 127.0.0.1.",
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
     default:
       throw new ToolInputError(`Unknown MindGate tool: ${name}`);
     }
@@ -811,12 +1030,6 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   throw new Error(`Prompt not found: ${request.params.name}`);
 });
 
-async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
-
-main().catch((err) => {
-  console.error("[MindGate Fatal Error]", err);
-  process.exit(1);
-});
