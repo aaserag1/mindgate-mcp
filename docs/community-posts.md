@@ -1,6 +1,6 @@
 # MindGate MCP — Community Launch Posts
 
-> Ready-to-publish copy for launch day. All claims match v1.2.0 exactly.
+> Ready-to-publish copy for launch day. All claims match v1.2.1 exactly.
 > Links: repo → https://github.com/aaserag1/mindgate-mcp · npm: `mindgate-mcp`
 
 ---
@@ -25,7 +25,7 @@ What it does:
 
 Honest limits, stated in SECURITY.md: redaction is pattern-based best-effort; memories are data, not instructions; the Brotli lock is defense-in-depth, a patched runtime is the real fix. The tool never phones home — it has no network code.
 
-Stack: TypeScript, better-sqlite3, @modelcontextprotocol/sdk. MIT. v1.2.0 has 29 tests (real SQLite + FTS5).
+Stack: TypeScript, better-sqlite3, @modelcontextprotocol/sdk. MIT. v1.2.1 has 29 tests (real SQLite + FTS5).
 
 Repo: https://github.com/aaserag1/mindgate-mcp
 
@@ -47,7 +47,7 @@ If you use more than one AI coding agent on the same repo (looking at you, Curso
 - **Handoffs**: structured session summaries so session #2 starts where session #1 ended
 - **Safe file writes**: atomic, `.bak` backups, hand-written AGENTS.md protected unless `force: true`
 - **Secret redaction** on write (pattern-based, best-effort — documented as such)
-- MIT, v1.2.0, 29 passing tests
+- MIT, v1.2.1, 29 passing tests
 
 Repo & docs (EN/AR): https://github.com/aaserag1/mindgate-mcp
 
@@ -113,7 +113,7 @@ https://github.com/aaserag1/mindgate-mcp
 ## Launch checklist
 
 - [ ] `npm publish --access public` (maintainer only)
-- [ ] GitHub release `v1.2.0` + release notes from PR #1/#2 bodies
+- [ ] GitHub release `v1.2.1` + release notes from PR #1/#2 bodies
 - [ ] Repo About → description + topics: `mcp`, `model-context-protocol`, `ai-memory`, `sqlite`, `fts5`, `local-first`
 - [ ] Enable Discussions; pin "Show HN" thread
 - [ ] Landing page live via GitHub Pages (see `deploy-pages.yml`)

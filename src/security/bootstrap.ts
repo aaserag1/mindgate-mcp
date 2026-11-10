@@ -1,5 +1,5 @@
 /**
- * MindGate Startup Bootstrap (v1.2.0)
+ * MindGate Startup Bootstrap (v1.2.1)
  *
  * This module exists so the Node2Shell guard runs BEFORE any other import of
  * the application is evaluated. ES modules are evaluated depth-first in import

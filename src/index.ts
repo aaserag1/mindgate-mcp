@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MindGate (بوابة العقل) v1.2.0 — Model Context Protocol (MCP) Server
+ * MindGate (بوابة العقل) v1.2.1 — Model Context Protocol (MCP) Server
  *
  * A unified, local-first memory & context gateway for Antigravity, OpenCode,
  * Codex, Cursor, and Claude. Mitigates Node2Shell (CVE-2026-111497).
@@ -52,7 +52,7 @@ function printInitGuide(): void {
   const scriptPath = path.resolve(__filename).replace(/\\/g, "/");
   console.log(`
 =======================================================================
-🧠 MindGate v1.2.0 (بوابة العقل) — Configuration Generator
+🧠 MindGate v1.2.1 (بوابة العقل) — Configuration Generator
 🛡️ Security Status: ${securityStatus.advisory}
 =======================================================================
 
@@ -114,7 +114,7 @@ const store = new MindGateStore();
 const server = new Server(
   {
     name: "mindgate-mcp",
-    version: "1.2.0",
+    version: "1.2.1",
   },
   {
     capabilities: {

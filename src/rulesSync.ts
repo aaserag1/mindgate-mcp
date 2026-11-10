@@ -1,5 +1,5 @@
 /**
- * MindGate Rules Writer (v1.2.0)
+ * MindGate Rules Writer (v1.2.1)
  *
  * Safely writes generated workspace-rules files (AGENTS.md / CLAUDE.md /
  * .cursorrules / ...) to a project directory:
