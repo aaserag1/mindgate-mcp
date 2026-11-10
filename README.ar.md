@@ -1,9 +1,10 @@
-# 🧠 بوابة العقل — MindGate MCP (`v1.2.0`)
+# 🧠 بوابة العقل — MindGate MCP (`v1.2.1`)
 
-[![CI](https://github.com/aaserag1/mindgate-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/aaserag1/mindgate-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
 [![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.2.0](https://img.shields.io/badge/MCP-v1.2.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[![Version: 1.2.1](https://img.shields.io/badge/MCP-v1.2.1-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **خادم ذاكرة وسياق محلي ودائم لوكلاء الذكاء الاصطناعي عبر بروتوكول سياق النموذج (MCP).**
 
@@ -30,6 +31,8 @@
 ---
 
 ## 🏛️ المعمارية — كيف يعمل البرنامج
+
+![الرسم المعماري لـMindGate — الأنبوب المحلي الواحد](./docs/assets/architecture.png)
 
 ```mermaid
 flowchart TB
@@ -122,7 +125,7 @@ flowchart TB
 
 ## 🚀 التثبيت والتشغيل السريع
 
-### الطريقة الأولى: التشغيل المباشر عبر `npx` (بعد النشر على npm)
+### الطريقة الأولى: التشغيل المباشر عبر `npx` (منشور على npm)
 
 ```bash
 npx -y mindgate-mcp init
@@ -202,7 +205,7 @@ npm test
 npm run build
 ```
 
-الـ CI على GitHub Actions يشغّل التثبيت والفحص والاختبارات والبناء على Node 22.x و 24.x و 26.x.
+كل الاختبارات الـ29 تنجح على Linux؛ وعلى Windows تنجح 28 وتُتخطى واحدة (أمر `chmod` في POSIX غير مدعوم). الـGitHub Actions حاليًا غير متاحة على هذا الحساب، لذلك لا يوجد badge أخضر لـCI — الاختبارات تُشغّل محليًا قبل كل إصدار. الحد الأدنى: `^22.23.4 || ^24.22.1 || >=26.12.1`.
 
 ---
 

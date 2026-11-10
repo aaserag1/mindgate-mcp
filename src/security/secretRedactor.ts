@@ -1,5 +1,5 @@
 /**
- * MindGate Secret Redactor (v1.2.0)
+ * MindGate Secret Redactor (v1.2.1)
  *
  * Best-effort, local, offline redaction of well-known secret patterns before
  * they are persisted to the SQLite store. This is a safety net, not a

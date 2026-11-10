@@ -1,4 +1,4 @@
-# AGENTS.md — MindGate MCP Agent Guidelines (v1.2.0)
+# AGENTS.md — MindGate MCP Agent Guidelines (v1.2.1)
 
 This repository implements **MindGate MCP (`mindgate-mcp`)**, a local-first persistent memory and context server for AI agents over the Model Context Protocol (MCP).
 

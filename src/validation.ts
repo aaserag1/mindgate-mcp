@@ -1,5 +1,5 @@
 /**
- * MindGate Tool Input Validation (v1.2.0)
+ * MindGate Tool Input Validation (v1.2.1)
  *
  * The MCP SDK does not enforce `inputSchema` at runtime, so every tool
  * argument is validated here before it reaches the store. Limits keep the

@@ -1,13 +1,14 @@
-# 🧠 MindGate MCP (`v1.2.0`) — بوابة العقل
+# 🧠 MindGate MCP (`v1.2.1`) — بوابة العقل
 
-[![CI](https://github.com/aaserag1/mindgate-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/aaserag1/mindgate-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
 [![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.2.0](https://img.shields.io/badge/MCP-v1.2.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[![Version: 1.2.1](https://img.shields.io/badge/MCP-v1.2.1-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **Local-First Persistent Memory & Context Gateway for AI Agents (Model Context Protocol).**
 
-[🇪🇬 اقرأ التوثيق باللغة العربية](./README.ar.md)
+[🇪🇬 اقرأ التوثيق باللغة العربية](./README.ar.md) · [🖥️ Landing page](https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.npmjs.com/package/mindgate-mcp) · [🎬 58-second demo](./docs/video/mindgate-launch.mp4)
 
 ---
 
@@ -30,6 +31,10 @@ AI coding and workflow agents (**Antigravity**, **Cursor**, **Claude Desktop**, 
 ---
 
 ## 🏛️ Architecture — How MindGate Works
+
+![MindGate architecture — one local pipe: clients → stdio → bootstrap → validate → redact → SQLite FTS5 → compiled rules](./docs/assets/architecture.png)
+
+<details><summary>View the same flow as a Mermaid diagram (source)</summary>
 
 ```mermaid
 flowchart TB
@@ -63,6 +68,8 @@ flowchart TB
     STORE <--> DB
     RULES -->|"write / backup"| PROJ
 ```
+
+</details>
 
 **Request lifecycle (numbered as in the diagram):**
 
@@ -107,6 +114,28 @@ All tool arguments are validated at runtime; invalid input returns an MCP tool e
 
 ---
 
+## ❓ FAQ
+
+- **Where does my memory live?** `~/.mindgate/mindgate.db` (override with `MINDGATE_DB_PATH`). Plaintext by design — treat it like any local credential store. Delete the file to wipe everything.
+- **Does it work offline?** Yes — after install, nothing ever leaves your machine. No network, no telemetry, no accounts.
+- **Can I move memory between machines?** Yes: `export_memory_snapshot` → copy the JSON, or simply copy the `.db` file.
+- **Do all secrets get redacted?** No — well-known patterns only (best-effort). Never store raw secrets in memories.
+- **Can agents be prompt-injected via memories?** Memories are **data, not instructions**, and they are embedded verbatim into generated rules files — review generated `AGENTS.md` before committing it.
+- **Which Node do I need?** `^22.23.4 || ^24.22.1 || >=26.12.1` — see [SECURITY.md](./SECURITY.md) (CVE-2026-111497).
+
+## 🪟 Windows Troubleshooting
+
+`npm ci` fails with `EPERM ... better-sqlite3\prebuilds\win32-x64.node`? A running agent/editor is holding the native file:
+
+1. Close every app that uses MindGate (check the system tray too) and any VS Code windows on the repo.
+2. `Get-Process node | Select-Object Id, Path` — then `Stop-Process -Id <ID> -Force`.
+3. `Rename-Item node_modules node_modules.old` → `npm ci` → `npm test`. Renaming succeeds even while files are open.
+4. Delete `node_modules.old` afterwards.
+
+On Windows the POSIX `chmod` test is skipped; everything else passes (28 pass + 1 skip).
+
+---
+
 ## ⚙️ Environment Variables
 
 | Variable | Default | Description |
@@ -122,10 +151,11 @@ Database files are created with owner-only permissions (`0600` file, `0700` dire
 
 ## 🚀 Quick Start
 
-### Option 1: Zero-Install via `npx` (once published to npm)
+### Option 1: Zero-Install via `npx` (published on npm)
 
 ```bash
 npx -y mindgate-mcp init
+# verify: npm view mindgate-mcp version
 ```
 
 ### Option 2: Build from Source (Windows / macOS / Linux)
@@ -175,11 +205,11 @@ npm run init-config
 
 ```bash
 npm run typecheck   # TypeScript --noEmit
-npm test            # node:test unit/integration suite (SQLite + FTS5)
+npm test            # 29 tests (real SQLite + FTS5)
 npm run build       # emit dist/
 ```
 
-CI (GitHub Actions) runs install, typecheck, tests, and build on Node 22.x, 24.x, and 26.x.
+All 29 tests pass on Linux; on Windows 28 pass + 1 skipped (POSIX `chmod` is unsupported). GitHub Actions is currently unavailable on this account, so **no green-CI badge is claimed** — tests are run locally before every release. Minimum runtimes: `^22.23.4 || ^24.22.1 || >=26.12.1`.
 
 ---
 
