@@ -1,10 +1,10 @@
-# 🧠 MindGate MCP (`v1.3.0`) — بوابة العقل
+# 🧠 MindGate MCP (`v1.4.0`) — بوابة العقل
 
 [![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
 [![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.3.0](https://img.shields.io/badge/MCP-v1.3.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[![Version: 1.4.0](https://img.shields.io/badge/MCP-v1.4.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **Local-First Persistent Memory & Context Gateway for AI Agents (Model Context Protocol).**
 
@@ -21,6 +21,7 @@ AI coding and workflow agents (**Antigravity**, **Cursor**, **Claude Desktop**, 
 
 **MindGate MCP** addresses both in a single, zero-cloud local server:
 - 🗄️ **Blazing-Fast Local SQLite + FTS5 BM25 Search:** Instant full-text retrieval of architectural decisions, bugfixes, conventions, preferences, and session handoffs.
+- 🔍 **Hybrid Semantic Search (NEW in v1.4.0):** Combines BM25 keyword search with offline ONNX semantic embeddings (`all-MiniLM-L6-v2`, ~23 MB, 384-dim). `recall_context` automatically uses both engines when a query is provided — no network calls, 100% local. When semantic results are returned, the response includes `search.semantic: true`.
 - 🔄 **Decision Superseding & Lifecycle Tracking:** Supersede obsolete architectural decisions (`supersedes`) or mark them deprecated (`deprecate_memory`). Agents never follow stale patterns, while historical audit trails remain preserved.
 - 📦 **Historical Memory Compaction:** Automatically compact long chains of historical session handoffs into milestone summaries (`compact_memories`) to preserve context without inflating token usage.
 - 🖥️ **Built-in Local Web Dashboard:** Zero-dependency HTTP UI (`mindgate-mcp ui` or `npm run ui`) running locally on `http://127.0.0.1:4242` with Dark/Light themes, Arabic RTL & English LTR switch, live FTS5 search, workspace filtering, and visual context management.

@@ -1,9 +1,11 @@
 /**
- * MindGate Local-First SQLite + FTS5 Storage Engine (v1.2.1)
+ * MindGate Local-First SQLite + FTS5 Storage Engine (v1.4.0)
  *
  * Provides zero-cost, 100% offline persistent context, full-text BM25 search,
- * in-place memory updates, workspace rules generation (AGENTS.md / .cursorrules),
- * cross-agent session handoffs, and global developer preferences.
+ * semantic vector search (all-MiniLM-L6-v2 via ONNX, optional), hybrid ranking,
+ * decision superseding, memory compaction, in-place updates, workspace rules
+ * generation (AGENTS.md / .cursorrules), cross-agent session handoffs, and
+ * global developer preferences.
  *
  * Secret handling: well-known token patterns are redacted before anything is
  * written to disk (see ../security/secretRedactor.ts).
@@ -16,6 +18,7 @@ import path from "node:path";
 
 import { redactSecrets } from "../security/secretRedactor.js";
 import { RULES_SENTINEL } from "../rulesSync.js";
+import { LocalEmbedder, cosineSimilarity, VECTOR_DIM } from "../embeddings/embedder.js";
 
 export type MemoryCategory =
   | "architecture"
@@ -176,6 +179,10 @@ export class MindGateStore {
     if (!columnNames.has("superseded_by")) {
       this.db.exec("ALTER TABLE memories ADD COLUMN superseded_by INTEGER DEFAULT NULL");
     }
+    // v1.4.0: semantic embedding column (BLOB storing Float32Array of VECTOR_DIM floats)
+    if (!columnNames.has("embedding")) {
+      this.db.exec("ALTER TABLE memories ADD COLUMN embedding BLOB DEFAULT NULL");
+    }
     this.db.exec("CREATE INDEX IF NOT EXISTS idx_memories_status ON memories(status)");
   }
 
@@ -188,6 +195,78 @@ export class MindGateStore {
       return result.value;
     });
     return { values, redactions };
+  }
+
+  /**
+   * Persist a semantic embedding vector for a memory row.
+   * Called asynchronously after rememberDecision / updateMemory.
+   */
+  public setEmbedding(memoryId: number, vector: Float32Array): void {
+    this.db
+      .prepare("UPDATE memories SET embedding = ? WHERE id = ?")
+      .run(LocalEmbedder.serialize(vector), memoryId);
+  }
+
+  /**
+   * Hybrid semantic search: scores all memories that have an embedding
+   * via cosine similarity, then merges with BM25 FTS results.
+   * Returns up to `limit` memory records ranked by combined score.
+   */
+  public hybridSearch(params: {
+    queryVector: Float32Array;
+    queryFts?: string;
+    workspace: string;
+    workspaces: string[];
+    category?: string;
+    targetStatus: string | null;
+    limit: number;
+  }): MemoryRecord[] {
+    const { queryVector, workspaces, category, targetStatus, limit } = params;
+    const wsPlaceholders = workspaces.map(() => "?").join(", ");
+
+    // 1. Load all memories that have an embedding (within workspace + status)
+    const sql = `
+      SELECT id, embedding FROM memories
+      WHERE workspace IN (${wsPlaceholders})
+        AND embedding IS NOT NULL
+        ${category ? "AND category = ?" : ""}
+        ${targetStatus ? "AND status = ?" : ""}
+    `;
+    const bindArgs: unknown[] = [...workspaces];
+    if (category) bindArgs.push(category);
+    if (targetStatus) bindArgs.push(targetStatus);
+
+    const rows = this.db.prepare(sql).all(...bindArgs) as Array<{ id: number; embedding: Buffer }>;
+
+    // 2. Score each by cosine similarity
+    const scored: Array<{ id: number; score: number }> = [];
+    for (const row of rows) {
+      try {
+        const vec = LocalEmbedder.deserialize(row.embedding);
+        if (vec.length !== VECTOR_DIM) continue;
+        const score = cosineSimilarity(queryVector, vec);
+        scored.push({ id: row.id, score });
+      } catch {
+        // malformed BLOB — skip
+      }
+    }
+
+    // 3. Take top-N by cosine score
+    scored.sort((a, b) => b.score - a.score);
+    const topIds = scored.slice(0, limit * 2).map((s) => s.id);
+    if (topIds.length === 0) return [];
+
+    // 4. Fetch full records for top IDs, preserving cosine rank order
+    const idPlaceholders = topIds.map(() => "?").join(", ");
+    const full = this.db
+      .prepare(`SELECT * FROM memories WHERE id IN (${idPlaceholders})`)
+      .all(...topIds) as MemoryRecord[];
+
+    // Sort by original cosine rank
+    const scoreMap = new Map(scored.map((s) => [s.id, s.score]));
+    full.sort((a, b) => (scoreMap.get(b.id) ?? 0) - (scoreMap.get(a.id) ?? 0));
+
+    return full.slice(0, limit);
   }
 
   public rememberDecision(params: {
@@ -332,11 +411,12 @@ export class MindGateStore {
     limit?: number;
     includeGlobal?: boolean;
     status?: MemoryStatus | "all";
+    semanticVector?: Float32Array; // injected by index.ts after async embed()
   }): {
     memories: MemoryRecord[];
     latestSession: SessionRecord | null;
     preferences: PreferenceRecord[];
-    search: { query: string | null; matched: boolean; fallback: boolean };
+    search: { query: string | null; matched: boolean; fallback: boolean; semantic: boolean };
   } {
     const workspace =
       params.workspace || process.env.MINDGATE_DEFAULT_WORKSPACE || "global";
@@ -355,8 +435,10 @@ export class MindGateStore {
     let memories: MemoryRecord[] = [];
     let searchMatched = false;
     let usedFallback = false;
+    let usedSemantic = false;
 
     if (queryText.length > 0) {
+      // ── 1. FTS5 BM25 keyword search ─────────────────────────────────────────
       const sanitizedQuery = queryText
         .replace(/["'*^()]/g, " ")
         .trim()
@@ -385,11 +467,34 @@ export class MindGateStore {
         memories = this.db.prepare(sql).all(...bindArgs) as MemoryRecord[];
         searchMatched = memories.length > 0;
       }
+
+      // ── 2. Semantic (cosine) search if embedder produced a vector ────────────
+      if (params.semanticVector) {
+        const semanticResults = this.hybridSearch({
+          queryVector: params.semanticVector,
+          workspaces,
+          category: params.category,
+          targetStatus,
+          workspace,
+          limit,
+        });
+
+        if (semanticResults.length > 0) {
+          usedSemantic = true;
+          // Merge: deduplicate by id, prefer semantic order but keep FTS hits first
+          const ftsIds = new Set(memories.map((m) => m.id));
+          const merged = [...memories];
+          for (const sr of semanticResults) {
+            if (!ftsIds.has(sr.id)) merged.push(sr);
+          }
+          memories = merged.slice(0, limit);
+          searchMatched = true;
+        }
+      }
     }
 
     if (memories.length === 0) {
-      // No (usable) full-text match — fall back to most recent memories so the
-      // caller always gets context, but flag it so it is not mistaken for hits.
+      // No match — fall back to most recent memories.
       usedFallback = queryText.length > 0;
       const sql = `
         SELECT *
@@ -425,6 +530,7 @@ export class MindGateStore {
         query: queryText.length > 0 ? queryText : null,
         matched: queryText.length > 0 ? searchMatched : true,
         fallback: usedFallback,
+        semantic: usedSemantic,
       },
     };
   }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MindGate (بوابة العقل) v1.3.0 — Model Context Protocol (MCP) Server
+ * MindGate (بوابة العقل) v1.4.0 — Model Context Protocol (MCP) Server
  *
  * A unified, local-first memory & context gateway for Antigravity, OpenCode,
  * Codex, Cursor, and Claude. Mitigates Node2Shell (CVE-2026-111497).
@@ -32,6 +32,7 @@ import {
   uninstallGitHook,
   captureCommitHandoff,
 } from "./gitHook.js";
+import { embedder, LocalEmbedder } from "./embeddings/embedder.js";
 import {
   LIMITS,
   ToolInputError,
@@ -62,7 +63,7 @@ function printInitGuide(): void {
   const scriptPath = path.resolve(__filename).replace(/\\/g, "/");
   console.log(`
 =======================================================================
-🧠 MindGate v1.3.0 (بوابة العقل) — Configuration Generator
+🧠 MindGate v1.4.0 (بوابة العقل) — Configuration Generator
 🛡️ Security Status: ${securityStatus.advisory}
 =======================================================================
 
@@ -181,6 +182,16 @@ Press Ctrl+C to stop the dashboard.
     console.log(`[MindGate] ${res.message}`);
   }
   process.exit(0);
+} else if (process.argv.includes("download-model")) {
+  // The model is bundled inside the npm package — no download needed.
+  const { MODEL_DIR } = await import("./embeddings/embedder.js");
+  console.log(`[MindGate] Semantic model directory: ${MODEL_DIR}`);
+  if (LocalEmbedder.isAvailable()) {
+    console.log("[MindGate] ✅ Model files found — semantic search is active.");
+  } else {
+    console.log("[MindGate] ❌ Model files missing. Reinstall: npm install -g mindgate-mcp");
+  }
+  process.exit(0);
 } else {
   // Proceed with standard MCP Stdio Server
   runMcpServer().catch((err) => {
@@ -195,7 +206,7 @@ async function runMcpServer(): Promise<void> {
   const server = new Server(
     {
       name: "mindgate-mcp",
-      version: "1.3.0",
+      version: "1.4.0",
     },
     {
       capabilities: {
@@ -591,6 +602,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
         supersedes: optionalPositiveIntArray(args.supersedes, "supersedes"),
       });
+      // Async embedding — best-effort, non-blocking
+      if (LocalEmbedder.isAvailable()) {
+        const embedText = `${record.title} ${record.content}`;
+        embedder.embed(embedText).then((vec) => {
+          if (vec) store.setEmbedding(record.id, vec);
+        }).catch(() => { /* graceful degradation */ });
+      }
       return {
         content: [
           {
@@ -626,6 +644,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         status: optionalMemoryStatus(args.status),
         supersedes: optionalPositiveIntArray(args.supersedes, "supersedes"),
       });
+      // Async re-embedding after update — best-effort, non-blocking
+      if (result && LocalEmbedder.isAvailable()) {
+        const embedText = `${result.record.title} ${result.record.content}`;
+        embedder.embed(embedText).then((vec) => {
+          if (vec) store.setEmbedding(result.record.id, vec);
+        }).catch(() => { /* graceful degradation */ });
+      }
       return {
         content: [
           {
@@ -652,14 +677,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case "recall_context": {
+      const queryText = optionalString(args.query, "query", LIMITS.queryMax) ?? "";
+      // Semantic embedding: async embed the query, then pass vector to store
+      let semanticVector: Float32Array | undefined;
+      if (queryText.length > 0 && LocalEmbedder.isAvailable()) {
+        try {
+          semanticVector = (await embedder.embed(queryText)) ?? undefined;
+        } catch {
+          // graceful degradation — fall back to FTS5 only
+        }
+      }
       const result = store.recallContext({
-        query: optionalString(args.query, "query", LIMITS.queryMax),
+        query: queryText || undefined,
         workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
         category: optionalCategory(args.category),
         limit: optionalLimit(args.limit, "limit", 50) ?? 10,
         includeGlobal:
           optionalBoolean(args.include_global, "include_global") ?? true,
         status: optionalRecallStatus(args.status),
+        semanticVector,
       });
       return {
         content: [

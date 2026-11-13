@@ -1,10 +1,10 @@
-# 🧠 بوابة العقل — MindGate MCP (`v1.3.0`)
+# 🧠 بوابة العقل — MindGate MCP (`v1.4.0`)
 
 [![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
 [![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.3.0](https://img.shields.io/badge/MCP-v1.3.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[![Version: 1.4.0](https://img.shields.io/badge/MCP-v1.4.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **خادم ذاكرة وسياق محلي ودائم لوكلاء الذكاء الاصطناعي عبر بروتوكول سياق النموذج (MCP).**
 
