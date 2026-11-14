@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MindGate (بوابة العقل) v1.4.0 — Model Context Protocol (MCP) Server
+ * MindGate (بوابة العقل) v1.5.0 — Model Context Protocol (MCP) Server
  *
  * A unified, local-first memory & context gateway for Antigravity, OpenCode,
  * Codex, Cursor, and Claude. Mitigates Node2Shell (CVE-2026-111497).
@@ -63,7 +63,7 @@ function printInitGuide(): void {
   const scriptPath = path.resolve(__filename).replace(/\\/g, "/");
   console.log(`
 =======================================================================
-🧠 MindGate v1.4.0 (بوابة العقل) — Configuration Generator
+🧠 MindGate v1.5.0 (بوابة العقل) — Configuration Generator
 🛡️ Security Status: ${securityStatus.advisory}
 =======================================================================
 
@@ -183,13 +183,29 @@ Press Ctrl+C to stop the dashboard.
   }
   process.exit(0);
 } else if (process.argv.includes("download-model")) {
-  // The model is bundled inside the npm package — no download needed.
-  const { MODEL_DIR } = await import("./embeddings/embedder.js");
-  console.log(`[MindGate] Semantic model directory: ${MODEL_DIR}`);
-  if (LocalEmbedder.isAvailable()) {
-    console.log("[MindGate] ✅ Model files found — semantic search is active.");
+  const isMultilingual = process.argv.includes("--multilingual") || process.argv.includes("-m");
+  if (isMultilingual) {
+    console.log("[MindGate] Downloading multilingual ONNX model (paraphrase-multilingual-MiniLM-L12-v2)...");
+    const { downloadMultilingualModel, MULTILINGUAL_MODEL_DIR } = await import("./embeddings/embedder.js");
+    try {
+      await downloadMultilingualModel((msg) => console.log(msg));
+      console.log(`[MindGate] ✅ Multilingual model ready in: ${MULTILINGUAL_MODEL_DIR}`);
+      console.log("[MindGate] Cross-lingual search (Arabic <-> English) is now active!");
+    } catch (err) {
+      console.error("[MindGate] Download failed:", err);
+      process.exit(1);
+    }
   } else {
-    console.log("[MindGate] ❌ Model files missing. Reinstall: npm install -g mindgate-mcp");
+    const { BUNDLED_MODEL_DIR, LocalEmbedder } = await import("./embeddings/embedder.js");
+    console.log(`[MindGate] Bundled model directory: ${BUNDLED_MODEL_DIR}`);
+    console.log(`[MindGate] Active profile: ${LocalEmbedder.getActiveProfile()}`);
+    if (LocalEmbedder.isAvailable()) {
+      console.log("[MindGate] ✅ Semantic search model is active.");
+      console.log("[MindGate] To enable high-accuracy multilingual (Arabic <-> English) search, run:");
+      console.log("           mindgate-mcp download-model --multilingual");
+    } else {
+      console.log("[MindGate] ❌ Model files missing. Reinstall: npm install -g mindgate-mcp");
+    }
   }
   process.exit(0);
 } else {
@@ -206,7 +222,7 @@ async function runMcpServer(): Promise<void> {
   const server = new Server(
     {
       name: "mindgate-mcp",
-      version: "1.4.0",
+      version: "1.5.0",
     },
     {
       capabilities: {

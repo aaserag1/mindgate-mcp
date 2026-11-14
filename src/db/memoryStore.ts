@@ -1,5 +1,5 @@
 /**
- * MindGate Local-First SQLite + FTS5 Storage Engine (v1.4.0)
+ * MindGate Local-First SQLite + FTS5 Storage Engine (v1.5.0)
  *
  * Provides zero-cost, 100% offline persistent context, full-text BM25 search,
  * semantic vector search (all-MiniLM-L6-v2 via ONNX, optional), hybrid ranking,

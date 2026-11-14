@@ -1,6 +1,6 @@
 {
   "name": "mindgate-mcp",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "MindGate (بوابة العقل) — Local-first, Node2Shell-hardened Model Context Protocol (MCP) memory & context gateway for Antigravity, OpenCode, Codex, Cursor, and Claude.",
   "author": "Ahmed Adel (aaserag1)",
   "license": "MIT",
@@ -58,6 +58,7 @@
     "node2shell-hardened"
   ],
   "dependencies": {
+    "@huggingface/tokenizers": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.11.0",
     "better-sqlite3": "^13.0.3",
     "onnxruntime-node": "^1.31.1"

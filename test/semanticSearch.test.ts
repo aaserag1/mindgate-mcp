@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
-import { LocalEmbedder, cosineSimilarity, embedder, VECTOR_DIM } from "../src/embeddings/embedder.js";
+import { LocalEmbedder, cosineSimilarity, embedder, VECTOR_DIM, normalizeArabic } from "../src/embeddings/embedder.js";
 import { MindGateStore } from "../src/db/memoryStore.js";
 
 // Use a temp DB for isolation
@@ -180,5 +180,33 @@ describe("MindGateStore.recallContext — semantic flag", () => {
 
     assert.equal(result.search.semantic, false,
       "recallContext should report search.semantic=false without semanticVector");
+  });
+});
+
+describe("Cross-Lingual Arabic Normalization & Profiles", () => {
+  it("normalizeArabic strips tashkeel and unifies alef and yaa", () => {
+    const raw = "إِدَارَةُ قَوَاعِدِ البَيَانَاتِ وَالرَّسَائِلِ";
+    const cleaned = normalizeArabic(raw);
+    assert.equal(cleaned, "ادارة قواعد البيانات والرسائل");
+  });
+
+  it("LocalEmbedder.getActiveProfile returns valid profile", () => {
+    const profile = LocalEmbedder.getActiveProfile();
+    assert.ok(profile === "default" || profile === "multilingual");
+  });
+
+  it("Arabic query scores higher for related English architecture than unrelated concept", async () => {
+    const [enDb, arDbQuery, enCooking] = await Promise.all([
+      embedder.embed("Database connection pooling and SQL query optimization"),
+      embedder.embed("إدارة الاتصال بقواعد البيانات وتحسين استعلامات SQL"),
+      embedder.embed("Cooking traditional recipes and preparing dinner"),
+    ]);
+    assert.ok(enDb && arDbQuery && enCooking);
+    const simRelevant = cosineSimilarity(enDb!, arDbQuery!);
+    const simUnrelated = cosineSimilarity(enDb!, enCooking!);
+    assert.ok(
+      simRelevant > simUnrelated,
+      `Cross-lingual relevant (${simRelevant.toFixed(4)}) should be higher than unrelated (${simUnrelated.toFixed(4)})`
+    );
   });
 });

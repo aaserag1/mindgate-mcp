@@ -1,26 +1,52 @@
 /**
- * MindGate Local Embedder — Zero-network semantic embeddings
+ * MindGate Local Embedder — Zero-network semantic embeddings (v1.5.0)
  *
- * Uses all-MiniLM-L6-v2 (quantized ONNX, ~23 MB) via onnxruntime-node.
- * Produces 384-dimensional float32 vectors, fully offline.
+ * Supports dual profiles:
+ * 1. Default (bundled): all-MiniLM-L6-v2 (INT8 ONNX, ~23 MB, 384-dim)
+ * 2. Multilingual: paraphrase-multilingual-MiniLM-L12-v2 (INT8 ONNX, ~118 MB, 384-dim)
+ *    Downloaded on-demand via `mindgate-mcp download-model --multilingual`
  *
- * The embedder is OPTIONAL — if the model files are missing or onnxruntime
- * is not installed, it gracefully returns null and the caller falls back to
- * FTS5-only search. This keeps the base package lean.
+ * Uses @huggingface/tokenizers for robust WordPiece & Unigram subword tokenization
+ * with native Arabic text normalization for cross-lingual (Arabic <-> English) search.
+ * 100% offline, zero cloud API calls.
  */
 
 import path from "node:path";
 import fs from "node:fs";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
+import { Tokenizer } from "@huggingface/tokenizers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const MODEL_DIR = path.join(__dirname, "model");
-const MODEL_PATH = path.join(MODEL_DIR, "model.onnx");
-const TOKENIZER_PATH = path.join(MODEL_DIR, "tokenizer.json");
+export const BUNDLED_MODEL_DIR = path.join(__dirname, "model");
+export const MULTILINGUAL_MODEL_DIR = path.join(os.homedir(), ".mindgate", "models", "multilingual");
+
+// Backward compatibility export
+export const MODEL_DIR = BUNDLED_MODEL_DIR;
 
 export const VECTOR_DIM = 384;
 
-// ─── Types (inlined to avoid importing onnxruntime at module-load time) ───────
+// ─── Arabic Text Normalization ───────────────────────────────────────────────
+
+/**
+ * Normalizes Arabic text for cross-lingual semantic embedding:
+ * - Strips Tashkeel (harakat / diacritics) and Tatweel
+ * - Normalizes Alef forms (أ, إ, آ, ٱ -> ا)
+ * - Normalizes Yaa forms (ى -> ي)
+ */
+export function normalizeArabic(text: string): string {
+  if (!text) return "";
+  return text
+    // remove diacritics: fatha, damma, kasra, sukun, shadda, tanween, dagger alef, tatweel
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    // unify alef variants to bare alef
+    .replace(/[أإآٱ]/g, "ا")
+    // unify alif maqsura to yaa
+    .replace(/ى/g, "ي")
+    .trim();
+}
+
+// ─── Types (inlined to avoid loading onnxruntime at module evaluation time) ──
 
 interface OrtSession {
   run(feeds: Record<string, OrtTensor>): Promise<Record<string, OrtTensor>>;
@@ -39,70 +65,6 @@ type OrtInference = {
     dims: number[]
   ) => OrtTensor;
 };
-
-// ─── Tokenizer (minimal WordPiece BPE subset sufficient for MiniLM) ──────────
-
-interface TokenizerConfig {
-  model: { vocab: Record<string, number> };
-  added_tokens: Array<{ id: number; content: string }>;
-}
-
-function buildVocab(tokenizerJson: TokenizerConfig): {
-  vocab: Record<string, number>;
-  clsId: number;
-  sepId: number;
-  padId: number;
-  unkId: number;
-} {
-  const vocab = tokenizerJson.model.vocab;
-  return {
-    vocab,
-    clsId: vocab["[CLS]"] ?? 101,
-    sepId: vocab["[SEP]"] ?? 102,
-    padId: vocab["[PAD]"] ?? 0,
-    unkId: vocab["[UNK]"] ?? 100,
-  };
-}
-
-function tokenize(
-  text: string,
-  vocab: Record<string, number>,
-  unkId: number,
-  maxLen = 128
-): number[] {
-  // Lowercase + basic whitespace split (sufficient for MiniLM)
-  const words = text.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff\s]/g, " ").split(/\s+/).filter(Boolean);
-  const ids: number[] = [];
-  for (const word of words) {
-    if (ids.length >= maxLen - 2) break;
-    // Try full word first, then character-level fallback
-    if (word in vocab) {
-      ids.push(vocab[word]);
-    } else {
-      // Simple character-level subword fallback
-      let remaining = word;
-      let first = true;
-      while (remaining.length > 0) {
-        let matched = false;
-        for (let len = Math.min(remaining.length, 20); len > 0; len--) {
-          const sub = first ? remaining.slice(0, len) : "##" + remaining.slice(0, len);
-          if (sub in vocab) {
-            ids.push(vocab[sub]);
-            remaining = remaining.slice(len);
-            first = false;
-            matched = true;
-            break;
-          }
-        }
-        if (!matched) {
-          ids.push(unkId);
-          break;
-        }
-      }
-    }
-  }
-  return ids;
-}
 
 // ─── Mean Pooling (average over non-padding token embeddings) ─────────────────
 
@@ -147,16 +109,67 @@ export function cosineSimilarity(a: Float32Array, b: Float32Array): number {
 
 // ─── Embedder class ───────────────────────────────────────────────────────────
 
+export type EmbeddingProfile = "default" | "multilingual";
+
 export class LocalEmbedder {
   private session: OrtSession | null = null;
-  private vocabData: ReturnType<typeof buildVocab> | null = null;
+  private tokenizer: Tokenizer | null = null;
   private ort: OrtInference | null = null;
   private ready = false;
   private initPromise: Promise<void> | null = null;
+  private activeProfile: EmbeddingProfile = "default";
 
-  /** Returns true if the model files exist on disk */
+  /**
+   * Determine active embedding profile based on config and available files.
+   * Priority:
+   * 1. Environment variable MINDGATE_EMBEDDING_PROFILE or MINDGATE_MODEL
+   * 2. Multilingual model if present on disk (~/.mindgate/models/multilingual)
+   * 3. Bundled default model (all-MiniLM-L6-v2)
+   */
+  static getActiveProfile(): EmbeddingProfile {
+    const forced = (process.env.MINDGATE_EMBEDDING_PROFILE || process.env.MINDGATE_MODEL || "").toLowerCase();
+    if (forced === "multilingual" || forced === "multi") {
+      return "multilingual";
+    }
+    if (LocalEmbedder.isMultilingualAvailable()) {
+      return "multilingual";
+    }
+    return "default";
+  }
+
+  /** Returns true if the bundled model files exist on disk */
+  static isBundledAvailable(): boolean {
+    const modelPath = path.join(BUNDLED_MODEL_DIR, "model.onnx");
+    const tokenizerPath = path.join(BUNDLED_MODEL_DIR, "tokenizer.json");
+    return fs.existsSync(modelPath) && fs.existsSync(tokenizerPath);
+  }
+
+  /** Returns true if the multilingual model files exist on disk */
+  static isMultilingualAvailable(): boolean {
+    const modelPath = path.join(MULTILINGUAL_MODEL_DIR, "model.onnx");
+    const tokenizerPath = path.join(MULTILINGUAL_MODEL_DIR, "tokenizer.json");
+    return fs.existsSync(modelPath) && fs.existsSync(tokenizerPath);
+  }
+
+  /** Returns true if any embedding model is available */
   static isAvailable(): boolean {
-    return fs.existsSync(MODEL_PATH) && fs.existsSync(TOKENIZER_PATH);
+    return LocalEmbedder.isMultilingualAvailable() || LocalEmbedder.isBundledAvailable();
+  }
+
+  /** Get model file paths for a given profile */
+  static getModelPaths(profile: EmbeddingProfile): { modelPath: string; tokenizerPath: string; configPath?: string } {
+    if (profile === "multilingual" && LocalEmbedder.isMultilingualAvailable()) {
+      return {
+        modelPath: path.join(MULTILINGUAL_MODEL_DIR, "model.onnx"),
+        tokenizerPath: path.join(MULTILINGUAL_MODEL_DIR, "tokenizer.json"),
+        configPath: path.join(MULTILINGUAL_MODEL_DIR, "tokenizer_config.json"),
+      };
+    }
+    return {
+      modelPath: path.join(BUNDLED_MODEL_DIR, "model.onnx"),
+      tokenizerPath: path.join(BUNDLED_MODEL_DIR, "tokenizer.json"),
+      configPath: path.join(BUNDLED_MODEL_DIR, "tokenizer_config.json"),
+    };
   }
 
   /** Lazy-init: loads model only on first embed() call */
@@ -171,14 +184,23 @@ export class LocalEmbedder {
     if (!LocalEmbedder.isAvailable()) {
       throw new Error("[MindGate Embedder] Model files not found. Run: mindgate-mcp download-model");
     }
+
+    this.activeProfile = LocalEmbedder.getActiveProfile();
+    const paths = LocalEmbedder.getModelPaths(this.activeProfile);
+
     // Dynamic import keeps onnxruntime out of the main module graph when not used
     this.ort = (await import("onnxruntime-node")) as unknown as OrtInference;
-    this.session = await this.ort.InferenceSession.create(MODEL_PATH, {
+    this.session = await this.ort.InferenceSession.create(paths.modelPath, {
       executionProviders: ["cpu"],
       graphOptimizationLevel: "all",
     });
-    const tokenizerRaw = JSON.parse(fs.readFileSync(TOKENIZER_PATH, "utf8")) as TokenizerConfig;
-    this.vocabData = buildVocab(tokenizerRaw);
+
+    const tokenizerRaw = JSON.parse(fs.readFileSync(paths.tokenizerPath, "utf8"));
+    const configRaw = paths.configPath && fs.existsSync(paths.configPath)
+      ? JSON.parse(fs.readFileSync(paths.configPath, "utf8"))
+      : undefined;
+
+    this.tokenizer = new Tokenizer(tokenizerRaw, configRaw);
     this.ready = true;
   }
 
@@ -193,23 +215,27 @@ export class LocalEmbedder {
     } catch {
       return null;
     }
-    if (!this.session || !this.vocabData || !this.ort) return null;
+    if (!this.session || !this.tokenizer || !this.ort) return null;
 
-    const { vocab, clsId, sepId, padId, unkId } = this.vocabData;
+    // Apply Arabic text normalization to improve cross-lingual matching
+    const cleanText = normalizeArabic(text);
+
     const MAX_SEQ = 128;
+    const encoded = this.tokenizer.encode(cleanText);
 
-    const tokenIds = tokenize(text, vocab, unkId, MAX_SEQ);
-    const inputIds = [clsId, ...tokenIds, sepId];
-    const seqLen = Math.min(inputIds.length, MAX_SEQ);
-    const paddedIds = new Array(MAX_SEQ).fill(padId);
-    const attMask = new Array(MAX_SEQ).fill(0);
-    for (let i = 0; i < seqLen; i++) {
-      paddedIds[i] = inputIds[i];
-      attMask[i] = 1;
+    const tokenIds = encoded.ids.slice(0, MAX_SEQ);
+    const attentionMask = encoded.attention_mask
+      ? encoded.attention_mask.slice(0, MAX_SEQ)
+      : new Array(tokenIds.length).fill(1);
+
+    // Pad to MAX_SEQ
+    while (tokenIds.length < MAX_SEQ) {
+      tokenIds.push(0);
+      attentionMask.push(0);
     }
 
-    const inputIdsBig = BigInt64Array.from(paddedIds.map(BigInt));
-    const attMaskBig = BigInt64Array.from(attMask.map(BigInt));
+    const inputIdsBig = BigInt64Array.from(tokenIds.map(BigInt));
+    const attMaskBig = BigInt64Array.from(attentionMask.map(BigInt));
     const tokenTypeIds = BigInt64Array.from(new Array(MAX_SEQ).fill(0n));
 
     const inputTensor = new this.ort.Tensor("int64", inputIdsBig, [1, MAX_SEQ]);
@@ -230,6 +256,11 @@ export class LocalEmbedder {
     return normalize(pooled);
   }
 
+  /** Returns current active embedding profile */
+  getProfile(): EmbeddingProfile {
+    return this.activeProfile;
+  }
+
   /** Serialize a float32 vector to a Buffer for SQLite BLOB storage */
   static serialize(vec: Float32Array): Buffer {
     return Buffer.from(vec.buffer, vec.byteOffset, vec.byteLength);
@@ -238,6 +269,46 @@ export class LocalEmbedder {
   /** Deserialize a Buffer from SQLite back to float32 vector */
   static deserialize(buf: Buffer): Float32Array {
     return new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
+  }
+}
+
+/**
+ * Downloads the high-accuracy multilingual model (paraphrase-multilingual-MiniLM-L12-v2, INT8)
+ * for cross-lingual (Arabic <-> English) semantic retrieval.
+ * Stored locally in ~/.mindgate/models/multilingual/
+ */
+export async function downloadMultilingualModel(
+  onProgress?: (msg: string) => void
+): Promise<void> {
+  const { pipeline } = await import("node:stream/promises");
+  const { Readable } = await import("node:stream");
+
+  if (!fs.existsSync(MULTILINGUAL_MODEL_DIR)) {
+    fs.mkdirSync(MULTILINGUAL_MODEL_DIR, { recursive: true, mode: 0o700 });
+  }
+
+  const BASE_URL = "https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2/resolve/main";
+  const files = [
+    { name: "tokenizer_config.json", url: `${BASE_URL}/tokenizer_config.json` },
+    { name: "tokenizer.json", url: `${BASE_URL}/tokenizer.json` },
+    { name: "model.onnx", url: `${BASE_URL}/onnx/model_quantized.onnx` },
+  ];
+
+  for (const file of files) {
+    const dest = path.join(MULTILINGUAL_MODEL_DIR, file.name);
+    if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
+      onProgress?.(`[MindGate] Already downloaded: ${file.name}`);
+      continue;
+    }
+    onProgress?.(`[MindGate] Downloading ${file.name}...`);
+    const res = await fetch(file.url);
+    if (!res.ok || !res.body) {
+      throw new Error(`Failed to download ${file.name}: HTTP ${res.status}`);
+    }
+    const fileStream = fs.createWriteStream(dest);
+    // @ts-expect-error Node stream from Web stream
+    await pipeline(Readable.fromWeb(res.body), fileStream);
+    onProgress?.(`[MindGate] Successfully saved: ${file.name}`);
   }
 }
 
