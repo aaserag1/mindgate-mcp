@@ -1,0 +1,28 @@
+# Smithery configuration file
+# https://smithery.ai/docs/config#smitheryyaml
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      defaultWorkspace:
+        type: string
+        description: "Default workspace name for isolated memories (defaults to 'global')"
+      redactSecrets:
+        type: boolean
+        description: "Whether to redact API keys and secrets automatically on write (defaults to true)"
+  commandFunction: |-
+    (config) => {
+      const env = { ...process.env };
+      if (config.defaultWorkspace) {
+        env.MINDGATE_DEFAULT_WORKSPACE = config.defaultWorkspace;
+      }
+      if (config.redactSecrets !== undefined) {
+        env.MINDGATE_REDACT_SECRETS = String(config.redactSecrets);
+      }
+      return {
+        command: 'npx',
+        args: ['-y', 'mindgate-mcp'],
+        env: env
+      };
+    }

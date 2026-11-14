@@ -207,11 +207,19 @@ npm run init-config
 }
 ```
 
+### Install via Smithery
+
+To install MindGate for Claude Desktop automatically via [Smithery](https://smithery.ai):
+
+```bash
+npx -y @smithery/cli install mindgate-mcp --client claude
+```
+
 ---
 
 ## 🖥️ Local Web Dashboard
 
-MindGate v1.3.0 includes a zero-dependency, local-only web dashboard. It binds strictly to `127.0.0.1` so it is never exposed to external networks.
+MindGate includes a zero-dependency, local-only web dashboard. It binds strictly to `127.0.0.1` so it is never exposed to external networks.
 
 ```bash
 # Launch dashboard from CLI (defaults to port 4242)
