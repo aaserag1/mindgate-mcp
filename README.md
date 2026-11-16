@@ -1,18 +1,18 @@
 # 🧠 MindGate MCP (`v1.5.0`) — بوابة العقل
 
-[npm version](https://www.npmjs.com/package/mindgate-mcp)
-[npm downloads](https://www.npmjs.com/package/mindgate-mcp)
-[License: MIT](https://www.google.com/search?q=./LICENSE)
-[Security: Node2Shell Hardened](https://www.google.com/search?q=./SECURITY.md)
-[](https://github.com/aaserag1/mindgate-mcp)
+[![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
+[![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
+[![Version: 1.5.0](https://img.shields.io/badge/MCP-v1.5.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **Stop re-explaining your codebase every morning.**  
 A **100% local-first persistent memory MCP server** for **Cursor**, **Claude Desktop**, **Antigravity**, **Windsurf**, and **Codex** — backed by SQLite + FTS5, automatic secret redaction, and auto-compiled `AGENTS.md` / `.cursorrules` / `CLAUDE.md` rules.
 
-[🇪🇬 التوثيق بالعربية](https://github.com/aaserag1/mindgate-mcp/blob/main/README.ar.md) · [🖥️ Landing Page](https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.npmjs.com/package/mindgate-mcp) · [🎬 58-second Demo](/docs/video/mindgate-launch.mp4)
+[🇪🇬 التوثيق بالعربية](./README.ar.md) · [🖥️ Landing Page](https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.npmjs.com/package/mindgate-mcp) · [🎬 58-second Demo](./docs/video/mindgate-launch.mp4)
 
-&lt;!-- Tip: Replace the link below with an inline GIF (e.g. ./docs/video/mindgate-demo.gif) so visitors see it auto-play right here --&gt;
-> 🎬 **[Watch the 58-second demo](docs/video/mindgate-launch.mp4)** — Start a feature in Cursor, switch to Claude Desktop or Antigravity, and pick up with zero context loss.
+<!-- Tip: Replace the link below with an inline GIF (e.g. ./docs/video/mindgate-demo.gif) so visitors see it auto-play right here -->
+> 🎬 **[Watch the 58-second demo](./docs/video/mindgate-launch.mp4)** — Start a feature in Cursor, switch to Claude Desktop or Antigravity, and pick up with zero context loss.
 
 ---
 
@@ -43,8 +43,8 @@ npx -y mindgate-mcp init
 npx -y @smithery/cli install mindgate-mcp --client claude
 ```
 
-&lt;details&gt;
-&lt;summary&gt;Or build from source (Windows / macOS / Linux)&lt;/summary&gt;
+<details>
+<summary>Or build from source (Windows / macOS / Linux)</summary>
 
 ```bash
 git clone https://github.com/aaserag1/mindgate-mcp.git
@@ -68,7 +68,7 @@ npm run init-config
 }
 ```
 
-&lt;/details&gt;
+</details>
 
 ---
 
@@ -94,7 +94,7 @@ npm run init-config
 * **🔍 Optional Hybrid Semantic & Arabic ↔ English Search (`v1.4.0`–`v1.5.0`):** Combines BM25 with offline ONNX embeddings (`all-MiniLM-L6-v2`, ~23 MB, 384-dim) and a `multilingual` profile (`mindgate-mcp download-model --multilingual`) for >0.72 cosine alignment between Arabic queries and English decisions on CPU.
 * **🖥️ Built-in Local Web Dashboard:** Zero-dependency UI (`mindgate-mcp ui`) bound strictly to `127.0.0.1:4242` with Dark/Light themes, Arabic RTL & English LTR switch, live search, and JSON export.
 * **🪝 Git Post-Commit Hook:** Automatically logs commit messages and active files via `mindgate-mcp git-hook install` without blocking your workflow.
-* **🛡️ Node2Shell (CVE-2026-111497) Hardened:** stdio-only transport (zero HTTP attack surface on MCP), runtime version check, and a best-effort in-process lock of `node:zlib` Brotli decompression loaded first. See [SECURITY.md](https://www.google.com/search?q=./SECURITY.md).
+* **🛡️ Node2Shell (CVE-2026-111497) Hardened:** stdio-only transport (zero HTTP attack surface on MCP), runtime version check, and a best-effort in-process lock of `node:zlib` Brotli decompression loaded first. See [SECURITY.md](./SECURITY.md).
 
 > ⚠️ MindGate does **not** execute shell commands, does **not** open network sockets for MCP, and does **not** attempt to detect prompt injection in arbitrary text. Review generated rules files before committing them.
 
@@ -128,8 +128,8 @@ Appends a non-blocking background hook bounded by `# --- mindgate:post-commit --
 
 ## 🛠️ MCP Tools (13), Resources (2) & Prompts (1)
 
-&lt;details&gt;
-&lt;summary&gt;Expand full list of 13 MCP Tools, 2 Resources, and 1 Prompt&lt;/summary&gt;
+<details>
+<summary>Expand full list of 13 MCP Tools, 2 Resources, and 1 Prompt</summary>
 
 ### Tools (13)
 
@@ -156,16 +156,16 @@ Appends a non-blocking background hook bounded by `# --- mindgate:post-commit --
 ### Prompts (1)
 * `mindgate-bootstrap` — Loads project memory, preferences, and latest session handoff at session start (`workspace` optional).
 
-&lt;/details&gt;
+</details>
 
 ---
 
 ## 🏛️ Architecture
 
+![MindGate architecture — one local pipe: clients → stdio → bootstrap → validate → redact → SQLite FTS5 → compiled rules](./docs/assets/architecture.png)
 
-
-&lt;details&gt;
-&lt;summary&gt;View Mermaid Architecture Diagram&lt;/summary&gt;
+<details>
+<summary>View Mermaid Architecture Diagram</summary>
 
 ```mermaid
 flowchart TB
@@ -200,7 +200,7 @@ flowchart TB
     RULES -->|"write / backup"| PROJ
 ```
 
-&lt;/details&gt;
+</details>
 
 ---
 
@@ -219,13 +219,13 @@ flowchart TB
 
 * **Which Node.js version do I need?**  
   **Compatibility:** Runs on Node 20+ (with built-in `node:zlib` Brotli lock defense-in-depth).  
-  **Recommended for full CVE-2026-111497 protection:** `^22.23.4 || ^24.22.1 || >=26.12.1` (see [SECURITY.md](https://www.google.com/search?q=./SECURITY.md)).
+  **Recommended for full CVE-2026-111497 protection:** `^22.23.4 || ^24.22.1 || >=26.12.1` (see [SECURITY.md](./SECURITY.md)).
 * **Where does my memory live?** `~/.mindgate/mindgate.db` (override with `MINDGATE_DB_PATH`). Delete the file to wipe everything.
 * **Can I move memory between machines?** Yes — copy the `.db` file or use `export_memory_snapshot`.
 * **Does it work offline?** Yes — after install, nothing leaves your machine.
 
-&lt;details&gt;
-&lt;summary&gt;🪟 Windows Troubleshooting (EPERM on better-sqlite3)&lt;/summary&gt;
+<details>
+<summary>🪟 Windows Troubleshooting (EPERM on better-sqlite3)</summary>
 
 If `npm ci` fails with `EPERM ... better-sqlite3\prebuilds\win32-x64.node`, a running agent/editor is locking the native binary:
 
@@ -234,7 +234,7 @@ If `npm ci` fails with `EPERM ... better-sqlite3\prebuilds\win32-x64.node`, a ru
 3. Run `Rename-Item node_modules node_modules.old` → `npm ci` → `npm test`.
 4. Delete `node_modules.old`.
 
-&lt;/details&gt;
+</details>
 
 ---
 
@@ -252,4 +252,4 @@ All 29 tests pass on Linux; on Windows 28 pass + 1 skipped (POSIX `chmod` is uns
 
 ## 📄 License
 
-Released under the [MIT License](https://www.google.com/search?q=./LICENSE).
+Released under the [MIT License](./LICENSE).
