@@ -1,46 +1,171 @@
 # 🧠 MindGate MCP (`v1.5.0`) — بوابة العقل
 
-[![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
-[![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.5.0](https://img.shields.io/badge/MCP-v1.5.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[npm version](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp)
+[npm downloads](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp)
+[License: MIT](https://www.google.com/search?q=./LICENSE)
+[Security: Node2Shell Hardened](https://www.google.com/search?q=./SECURITY.md)
+[](https://github.com/aaserag1/mindgate-mcp)
 
-**Local-First Persistent Memory & Context Gateway for AI Agents (Model Context Protocol).**
+**Stop re-explaining your codebase every morning.**  
+A **100% local-first persistent memory MCP server** for **Cursor**, **Claude Desktop**, **Antigravity**, **Windsurf**, and **Codex** — backed by SQLite + FTS5, automatic secret redaction, and auto-compiled `AGENTS.md` / `.cursorrules` / `CLAUDE.md` rules.
 
-[🇪🇬 اقرأ التوثيق باللغة العربية](./README.ar.md) · [🖥️ Landing page](https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.npmjs.com/package/mindgate-mcp) · [🎬 58-second demo](./docs/video/mindgate-launch.mp4)
+[🇪🇬 التوثيق بالعربية](https://www.google.com/search?q=./README.ar.md) · [🖥️ Landing Page](https://www.google.com/search?q=https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp) · [🎬 58-second Demo](https://www.google.com/search?q=./docs/video/mindgate-launch.mp4)
 
----
-
-## 💡 Why MindGate MCP?
-
-AI coding and workflow agents (**Antigravity**, **Cursor**, **Claude Desktop**, **Windsurf**, **Cline**) suffer from two critical limitations:
-
-1. **Cross-Session Context Amnesia:** Every new chat starts from zero—forgetting architectural decisions, debugging root causes, coding conventions, and session handoffs.
-2. **Secret Leakage & Prompt-Infected Stores:** Memory servers that persist raw agent output can end up storing leaked API keys and acting as a confused-deputy for poisoned instructions.
-
-**MindGate MCP** addresses both in a single, zero-cloud local server:
-- 🗄️ **Blazing-Fast Local SQLite + FTS5 BM25 Search:** Instant full-text retrieval of architectural decisions, bugfixes, conventions, preferences, and session handoffs.
-- 🔍 **Hybrid Semantic Search (v1.4.0):** Combines BM25 keyword search with offline ONNX semantic embeddings (`all-MiniLM-L6-v2`, ~23 MB, 384-dim). `recall_context` automatically uses both engines when a query is provided — no network calls, 100% local.
-- 🌐 **Cross-Lingual Arabic <-> English Search (NEW in v1.5.0):** Native Arabic normalization and dual-profile architecture (`default` bundled + `multilingual` profile via `mindgate-mcp download-model --multilingual`). Allows Arabic queries to semantically retrieve English architectural decisions with >0.72 cosine alignment on CPU.
-- 🔄 **Decision Superseding & Lifecycle Tracking:** Supersede obsolete architectural decisions (`supersedes`) or mark them deprecated (`deprecate_memory`). Agents never follow stale patterns, while historical audit trails remain preserved.
-- 📦 **Historical Memory Compaction:** Automatically compact long chains of historical session handoffs into milestone summaries (`compact_memories`) to preserve context without inflating token usage.
-- 🖥️ **Built-in Local Web Dashboard:** Zero-dependency HTTP UI (`mindgate-mcp ui` or `npm run ui`) running locally on `http://127.0.0.1:4242` with Dark/Light themes, Arabic RTL & English LTR switch, live FTS5 search, workspace filtering, and visual context management.
-- 🪝 **Git Post-Commit Context Adapter:** Seamless commit tracking (`mindgate-mcp git-hook install`) that logs commit messages and active files directly into MindGate without workflow disruption.
-- 🔄 **Auto-Compiled Workspace Rules (`AGENTS.md` / `.cursorrules` / `CLAUDE.md`):** Compiles your stored decisions, conventions, and bugfixes into a structured rules file so any AI agent immediately inherits project context. Writes are atomic, existing files are backed up (`.bak-<timestamp>`), and hand-written files are never overwritten without `force: true`.
-- ✏️ **In-Place Memory Updates & Portable JSON Snapshots:** Update evolving decisions in place (`update_memory`) while keeping FTS5 indexes in sync, and export full JSON backups (`export_memory_snapshot`).
-- 🔒 **Secret Redaction On Write:** Well-known token patterns (OpenAI, GitHub, AWS, Slack, Google, JWT, PEM private keys) are masked with `[REDACTED:<kind>]` before anything touches disk — in memories, session handoffs, and preferences. Tool responses report a `redacted_secrets` count. Disable with `MINDGATE_REDACT_SECRETS=false` (not recommended).
-- 🛡️ **Node2Shell (CVE-2026-111497) Mitigations:** stdio-only transport (zero HTTP attack surface), runtime version check against the patched releases (22.23.4 / 24.22.1 / 26.12.1, Bun ≥ 1.4.4), and a best-effort in-process lock of the public `node:zlib` Brotli decompression API installed before any other module loads. See [SECURITY.md](./SECURITY.md) for the honest threat model and limitations.
-
-> ⚠️ MindGate does **not** execute shell commands, does **not** open network sockets, and does **not** attempt to detect prompt injection in arbitrary text. Memories you store are embedded verbatim into generated rules files — treat stored memories as you would any local notes file, and review generated rules before committing them.
+&lt;!-- Tip: Replace the link below with an inline GIF (e.g. ./docs/video/mindgate-demo.gif) so visitors see it auto-play right here --&gt;
+> 🎬 **[Watch the 58-second demo](https://www.google.com/search?q=./docs/video/mindgate-launch.mp4)** — Start a feature in Cursor, switch to Claude Desktop or Antigravity, and pick up with zero context loss.
 
 ---
 
-## 🏛️ Architecture — How MindGate Works
+## ⚡ Quick Start (30 Seconds)
 
-![MindGate architecture — one local pipe: clients → stdio → bootstrap → validate → redact → SQLite FTS5 → compiled rules](./docs/assets/architecture.png)
+### 1. Run with `npx` (Zero-Install)
 
-<details><summary>View the same flow as a Mermaid diagram (source)</summary>
+```bash
+npx -y mindgate-mcp init
+```
+
+### 2. Add to Cursor / Claude Desktop / Antigravity
+
+```json
+{
+  "mcpServers": {
+    "mindgate": {
+      "command": "npx",
+      "args": ["-y", "mindgate-mcp"]
+    }
+  }
+}
+```
+
+### 3. Install via Smithery (Claude Desktop)
+
+```bash
+npx -y @smithery/cli install mindgate-mcp --client claude
+```
+
+&lt;details&gt;
+&lt;summary&gt;Or build from source (Windows / macOS / Linux)&lt;/summary&gt;
+
+```bash
+git clone https://github.com/aaserag1/mindgate-mcp.git
+cd mindgate-mcp
+npm install
+npm run build
+npm run init-config
+```
+
+```json
+{
+  "mcpServers": {
+    "mindgate": {
+      "command": "node",
+      "args": ["C:\\path\\to\\mindgate-mcp\\dist\\index.js"],
+      "env": {
+        "MINDGATE_DB_PATH": "C:\\Users\\YOUR_USER\\.mindgate\\mindgate.db"
+      }
+    }
+  }
+}
+```
+
+&lt;/details&gt;
+
+---
+
+## 🆚 Why MindGate vs. Alternatives?
+
+| Feature | **MindGate MCP** | [Mem0 MCP](https://mem0.ai/openmemory) | [Basic Memory](https://docs.basicmemory.com/integrations/cursor) |
+| :--- | :--- | :--- | :--- |
+| **100% Local-First (No Cloud / No API Key)** | ✅ SQLite + FTS5 on disk | ❌ Hosted service / API key | ✅ Local Markdown files |
+| **Cross-Agent Handoff (Cursor ↔ Claude ↔ Codex)** | ✅ Structured handoffs | ✅ Cross-tool | ✅ Cross-tool |
+| **Auto-Compiled `AGENTS.md` / `.cursorrules` / `CLAUDE.md`** | ✅ Atomic write + `.bak` | ❌ | ❌ |
+| **Automatic Secret Redaction on Write** | ✅ Masks API keys & JWTs | ❌ | ❌ |
+| **Local Web Dashboard + Git Post-Commit Hook** | ✅ Built-in (`127.0.0.1:4242`) | ❌ | ❌ |
+| **Offline Cross-Lingual Search (Arabic ↔ English)** | ✅ Optional ONNX profile | ❌ | ❌ |
+
+---
+
+## 💡 Core Capabilities
+
+* **🗄️ Blazing-Fast Local SQLite + FTS5 BM25:** Instant full-text retrieval of architectural decisions, bugfixes, conventions, preferences, and session handoffs — zero network calls, zero telemetry.
+* **🔄 Auto-Compiled Workspace Rules:** `sync_workspace_rules` compiles stored decisions into `AGENTS.md`, `.cursorrules`, `CLAUDE.md`, `.windsurfrules`, or `MINDGATE_CONTEXT.md`. Writes are atomic, existing files get a `.bak-<timestamp>` backup, and hand-written files are never overwritten unless `force: true`.
+* **🔒 Secret Redaction on Write:** Well-known token patterns (OpenAI, GitHub, AWS, Slack, Google, JWT, PEM private keys) are masked with `[REDACTED:<kind>]` before touching disk. Disable with `MINDGATE_REDACT_SECRETS=false` (not recommended).
+* **🔄 Decision Lifecycle & Compaction:** Supersede outdated choices (`supersedes`), deprecate stale notes (`deprecate_memory`), update in-place (`update_memory`), and compact long session histories (`compact_memories`) to save tokens.
+* **🔍 Optional Hybrid Semantic & Arabic ↔ English Search (`v1.4.0`–`v1.5.0`):** Combines BM25 with offline ONNX embeddings (`all-MiniLM-L6-v2`, ~23 MB, 384-dim) and a `multilingual` profile (`mindgate-mcp download-model --multilingual`) for >0.72 cosine alignment between Arabic queries and English decisions on CPU.
+* **🖥️ Built-in Local Web Dashboard:** Zero-dependency UI (`mindgate-mcp ui`) bound strictly to `127.0.0.1:4242` with Dark/Light themes, Arabic RTL & English LTR switch, live search, and JSON export.
+* **🪝 Git Post-Commit Hook:** Automatically logs commit messages and active files via `mindgate-mcp git-hook install` without blocking your workflow.
+* **🛡️ Node2Shell (CVE-2026-111497) Hardened:** stdio-only transport (zero HTTP attack surface on MCP), runtime version check, and a best-effort in-process lock of `node:zlib` Brotli decompression loaded first. See [SECURITY.md](https://www.google.com/search?q=./SECURITY.md).
+
+> ⚠️ MindGate does **not** execute shell commands, does **not** open network sockets for MCP, and does **not** attempt to detect prompt injection in arbitrary text. Review generated rules files before committing them.
+
+---
+
+## 🖥️ Local Web Dashboard
+
+```bash
+mindgate-mcp ui              # Starts on http://127.0.0.1:4242
+mindgate-mcp ui --port 5050  # Custom port
+npm run ui                   # From cloned source
+```
+
+* **Visual Memory Manager:** Real-time FTS5 BM25 search, status badges (`active`, `superseded`, `deprecated`), workspace & category filters.
+* **Bi-Directional UI:** One-click switch between English (LTR) and Arabic (RTL), plus Dark & Light themes.
+* **Auto-Open from MCP Clients:** Append `--open-dashboard` (and optionally `--port 5050`) to your client's `args`. Occupied ports never trigger duplicate browser launches.
+
+---
+
+## 🪝 Git Post-Commit Hook
+
+```bash
+mindgate-mcp git-hook install
+mindgate-mcp git-hook install --workspace my-project
+mindgate-mcp git-hook uninstall
+```
+
+Appends a non-blocking background hook bounded by `# --- mindgate:post-commit ---` sentinels to `.git/hooks/post-commit`, preserving existing hooks.
+
+---
+
+## 🛠️ MCP Tools (13), Resources (2) & Prompts (1)
+
+&lt;details&gt;
+&lt;summary&gt;Expand full list of 13 MCP Tools, 2 Resources, and 1 Prompt&lt;/summary&gt;
+
+### Tools (13)
+
+| Tool Name | Description |
+| :--- | :--- |
+| `remember_decision` | Store a persistent memory (`architecture` / `decision` / `bugfix` / `convention` / `context`) with secret redaction and optional `supersedes` |
+| `update_memory` | Update an existing memory in-place by ID (and optional `status`) while keeping FTS5 indexes in sync |
+| `recall_context` | Search memories with FTS5 BM25 (and hybrid embeddings when available), workspace/category/status filters; falls back to recent memories (`search.fallback: true`) |
+| `deprecate_memory` | Mark a memory as deprecated by ID with an optional reason without deleting history |
+| `compact_memories` | Compact historical session handoffs into milestone summaries to reduce token usage |
+| `log_session_summary` | Save a structured session handoff (summary, next steps, active files) for the next agent |
+| `get_dashboard_url` | Return the local MindGate Web Dashboard URL (`http://127.0.0.1:4242`) |
+| `sync_workspace_rules` | Compile stored memories into `AGENTS.md`, `.cursorrules`, `CLAUDE.md`, `.windsurfrules`, or `MINDGATE_CONTEXT.md` |
+| `export_memory_snapshot` | Export a portable JSON backup of memories, handoffs, and preferences |
+| `set_user_preference` | Save or update a persistent developer preference (`key`/`value`) |
+| `get_user_preferences` | Retrieve saved preferences, optionally filtered by `category` |
+| `list_workspaces` | List all workspaces with memory counts and last-updated timestamps |
+| `delete_memory` | Delete a memory by its ID |
+
+### Resources (2)
+* `mindgate://context/latest` — Recent memories, latest cross-agent handoff, and preferences (JSON).
+* `mindgate://rules/agents-md` — Live auto-compiled `AGENTS.md` preview (Markdown).
+
+### Prompts (1)
+* `mindgate-bootstrap` — Loads project memory, preferences, and latest session handoff at session start (`workspace` optional).
+
+&lt;/details&gt;
+
+---
+
+## 🏛️ Architecture
+
+
+
+&lt;details&gt;
+&lt;summary&gt;View Mermaid Architecture Diagram&lt;/summary&gt;
 
 ```mermaid
 flowchart TB
@@ -54,7 +179,7 @@ flowchart TB
     subgraph Server["MindGate MCP Server — 100% local"]
         direction TB
         BOOT["1 · security/bootstrap.ts — first import<br/>locks the node:zlib Brotli API<br/>+ runtime version check (CVE-2026-111497)"]
-        TOOLS["2 · index.ts — MCP handlers<br/>10 tools · 2 resources · 1 prompt<br/>stdio JSON-RPC only"]
+        TOOLS["2 · index.ts — MCP handlers<br/>13 tools · 2 resources · 1 prompt<br/>stdio JSON-RPC only"]
         VALID["3 · validation.ts<br/>type + range + size limits<br/>invalid input → isError: true"]
         REDACT["4 · security/secretRedactor.ts<br/>sk-…, AKIA…, JWT, PEM → [REDACTED:kind]"]
         STORE["5 · db/memoryStore.ts<br/>SQLite (WAL) + FTS5 BM25<br/>triggers keep the index in sync"]
@@ -75,73 +200,7 @@ flowchart TB
     RULES -->|"write / backup"| PROJ
 ```
 
-</details>
-
-**Request lifecycle (numbered as in the diagram):**
-
-1. Any MCP client spawns `mindgate-mcp` as a child process. All communication is newline-delimited JSON-RPC over **stdio** — no sockets, no HTTP, no telemetry.
-2. The first module evaluated is `src/security/bootstrap.ts` (imported before everything else): it hard-locks the public `node:zlib` Brotli decompression API and checks the Node/Bun version against the patched releases for CVE-2026-111497.
-3. Every tool call is validated at runtime — types, ranges, size limits, positive IDs. Invalid input returns an MCP tool error (`isError: true`) with a descriptive message, never a crash.
-4. On write paths (remember / update / session handoff / preferences), secrets are redacted **before** anything touches disk.
-5. Storage is embedded SQLite + FTS5 (`better-sqlite3`) at `~/.mindgate/mindgate.db` — WAL mode, owner-only permissions. Insert/update/delete triggers keep the FTS index in sync automatically.
-6. `sync_workspace_rules` compiles memories → Markdown and writes it atomically (temp file + rename) with a timestamped `.bak-<timestamp>` backup; files without the `<!-- mindgate:auto-generated -->` marker are never overwritten unless `force: true`.
-
-> Trust boundaries: memories are **data, not instructions**; secret redaction is best-effort pattern matching; the Brotli lock is defense-in-depth. See [SECURITY.md](./SECURITY.md) for the full threat model.
-
----
-
-## 🛠️ MCP Tools Included (13 Tools)
-
-| Tool Name | Description |
-| :--- | :--- |
-| `remember_decision` | Store a persistent memory (architecture / decision / bugfix / convention / context) with automatic secret redaction and optional `supersedes` parameter to invalidate previous decisions |
-| `update_memory` | Update an existing memory in-place by ID with optional `status` (`active`/`superseded`/`deprecated`) while keeping FTS5 search indexes in sync |
-| `recall_context` | Search memories with FTS5 BM25 ranking, workspace/category filters, and lifecycle `status` filter (`active`/`superseded`/`deprecated`/`all`, default: `active`). When no query matches, falls back to most-recent memories and flags it (`search.fallback: true`) |
-| `deprecate_memory` | Mark an existing memory as deprecated by ID with an optional reason, excluding it from active recall without deletion |
-| `compact_memories` | Compact historical session handoffs into consolidated milestone summaries to reduce token overhead while retaining full context |
-| `log_session_summary` | Save a structured session handoff (summary, next steps, active files) for the next agent to resume |
-| `get_dashboard_url` | Get the URL of the local MindGate Web Dashboard (`http://127.0.0.1:4242`) |
-| `sync_workspace_rules` | Generate `AGENTS.md`, `.cursorrules`, `CLAUDE.md`, `.windsurfrules`, or `MINDGATE_CONTEXT.md` from stored memories. Atomic write, `.bak` backup, hand-written files protected unless `force: true` |
-| `export_memory_snapshot` | Export a portable JSON backup of memories, session handoffs, and preferences |
-| `set_user_preference` | Save or update a persistent developer preference (`key`/`value`) |
-| `get_user_preferences` | Retrieve all saved preferences, optionally filtered by `category` |
-| `list_workspaces` | List all workspaces with memory counts and last-updated timestamps |
-| `delete_memory` | Delete an outdated or superseded memory by its ID |
-
-All tool arguments are validated at runtime; invalid input returns an MCP tool error (`isError: true`) with a descriptive message instead of a protocol error.
-
----
-
-## 📦 MCP Resources & Prompts
-
-### Resources
-- `mindgate://context/latest` — Snapshot of recent memories, latest cross-agent session handoff, and developer preferences (JSON).
-- `mindgate://rules/agents-md` — Live auto-compiled `AGENTS.md` rules preview (Markdown).
-
-### Prompts
-- `mindgate-bootstrap` — Loads persistent project memory, preferences, and the latest session handoff at session start. Argument: `workspace` (optional).
-
----
-
-## ❓ FAQ
-
-- **Where does my memory live?** `~/.mindgate/mindgate.db` (override with `MINDGATE_DB_PATH`). Plaintext by design — treat it like any local credential store. Delete the file to wipe everything.
-- **Does it work offline?** Yes — after install, nothing ever leaves your machine. No network, no telemetry, no accounts.
-- **Can I move memory between machines?** Yes: `export_memory_snapshot` → copy the JSON, or simply copy the `.db` file.
-- **Do all secrets get redacted?** No — well-known patterns only (best-effort). Never store raw secrets in memories.
-- **Can agents be prompt-injected via memories?** Memories are **data, not instructions**, and they are embedded verbatim into generated rules files — review generated `AGENTS.md` before committing it.
-- **Which Node do I need?** `^22.23.4 || ^24.22.1 || >=26.12.1` — see [SECURITY.md](./SECURITY.md) (CVE-2026-111497).
-
-## 🪟 Windows Troubleshooting
-
-`npm ci` fails with `EPERM ... better-sqlite3\prebuilds\win32-x64.node`? A running agent/editor is holding the native file:
-
-1. Close every app that uses MindGate (check the system tray too) and any VS Code windows on the repo.
-2. `Get-Process node | Select-Object Id, Path` — then `Stop-Process -Id <ID> -Force`.
-3. `Rename-Item node_modules node_modules.old` → `npm ci` → `npm test`. Renaming succeeds even while files are open.
-4. Delete `node_modules.old` afterwards.
-
-On Windows the POSIX `chmod` test is skipped; everything else passes (28 pass + 1 skip).
+&lt;/details&gt;
 
 ---
 
@@ -149,120 +208,33 @@ On Windows the POSIX `chmod` test is skipped; everything else passes (28 pass + 
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `MINDGATE_DB_PATH` | `~/.mindgate/mindgate.db` | Absolute path of the SQLite database file. Parent directory is created automatically (`0700`). |
-| `MINDGATE_DEFAULT_WORKSPACE` | `global` | Default workspace when a tool call omits `workspace`. |
+| `MINDGATE_DB_PATH` | `~/.mindgate/mindgate.db` | SQLite database path (parent dir `0700`, file `0600`). |
+| `MINDGATE_DEFAULT_WORKSPACE` | `global` | Default workspace when `workspace` is omitted. |
 | `MINDGATE_REDACT_SECRETS` | `true` | Set to `false` to disable secret redaction on write (not recommended). |
-| `MINDGATE_STRICT_NODE2SHELL` | `false` | Set to `true` to refuse starting on an unpatched Node.js runtime. |
-
-Database files are created with owner-only permissions (`0600` file, `0700` directory). Contents are **plaintext by design** — treat the database like any local credential store.
+| `MINDGATE_STRICT_NODE2SHELL` | `false` | Set to `true` to refuse startup on an unpatched Node.js runtime. |
 
 ---
 
-## 🚀 Quick Start
+## ❓ FAQ & Runtime Compatibility
 
-### Option 1: Zero-Install via `npx` (published on npm)
+* **Which Node.js version do I need?**  
+  **Compatibility:** Runs on Node 20+ (with built-in `node:zlib` Brotli lock defense-in-depth).  
+  **Recommended for full CVE-2026-111497 protection:** `^22.23.4 || ^24.22.1 || >=26.12.1` (see [SECURITY.md](https://www.google.com/search?q=./SECURITY.md)).
+* **Where does my memory live?** `~/.mindgate/mindgate.db` (override with `MINDGATE_DB_PATH`). Delete the file to wipe everything.
+* **Can I move memory between machines?** Yes — copy the `.db` file or use `export_memory_snapshot`.
+* **Does it work offline?** Yes — after install, nothing leaves your machine.
 
-```bash
-npx -y mindgate-mcp init
-# verify: npm view mindgate-mcp version
-```
+&lt;details&gt;
+&lt;summary&gt;🪟 Windows Troubleshooting (EPERM on better-sqlite3)&lt;/summary&gt;
 
-### Option 2: Build from Source (Windows / macOS / Linux)
+If `npm ci` fails with `EPERM ... better-sqlite3\prebuilds\win32-x64.node`, a running agent/editor is locking the native binary:
 
-```bash
-git clone https://github.com/aaserag1/mindgate-mcp.git
-cd mindgate-mcp
-npm install
-npm run build
+1. Close every app using MindGate (check the system tray) and VS Code windows on the repo.
+2. Run `Get-Process node | Select-Object Id, Path` then `Stop-Process -Id <ID> -Force`.
+3. Run `Rename-Item node_modules node_modules.old` → `npm ci` → `npm test`.
+4. Delete `node_modules.old`.
 
-# Print ready-to-paste MCP client configuration
-npm run init-config
-```
-
-### Configure in Antigravity / Cursor / Claude Desktop (Windows Example)
-
-```json
-{
-  "mcpServers": {
-    "mindgate": {
-      "command": "node",
-      "args": ["C:\\path\\to\\mindgate-mcp\\dist\\index.js"],
-      "env": {
-        "MINDGATE_DB_PATH": "C:\\Users\\YOUR_USER\\.mindgate\\mindgate.db"
-      }
-    }
-  }
-}
-```
-
-### Configure via `npx` (Cross-Platform 1-Liner)
-
-```json
-{
-  "mcpServers": {
-    "mindgate": {
-      "command": "npx",
-      "args": ["-y", "mindgate-mcp"]
-    }
-  }
-}
-```
-
-### Install via Smithery
-
-To install MindGate for Claude Desktop automatically via [Smithery](https://smithery.ai):
-
-```bash
-npx -y @smithery/cli install mindgate-mcp --client claude
-```
-
----
-
-## 🖥️ Local Web Dashboard
-
-MindGate includes a zero-dependency, local-only web dashboard. It binds strictly to `127.0.0.1` so it is never exposed to external networks.
-
-```bash
-# Launch dashboard from CLI (defaults to port 4242)
-mindgate-mcp ui
-
-# Or specify a custom port
-mindgate-mcp ui --port 5050
-
-# When running from cloned source
-npm run ui
-```
-
-Then open [http://127.0.0.1:4242](http://127.0.0.1:4242) in your browser:
-- **Visual Memory Manager:** Search via FTS5 BM25 in real time, view status badges (`active`, `superseded`, `deprecated`), filter by workspace and category.
-- **Bi-Directional Language Support:** One-click toggle between English (LTR) and Arabic (RTL).
-- **Dark & Light Modes:** Smooth, accessible palette matching modern developer tools.
-- **Lifecycle Management:** Add new memories with `supersedes` links, mark decisions deprecated, or delete memories.
-- **One-Click Compaction:** Compact historical sessions into milestone summaries.
-- **Export & Backup:** Download a full JSON snapshot directly from the UI.
-
-To start the dashboard and open it in your default browser when an MCP client starts MindGate, append `--open-dashboard` to that client's MindGate command arguments. For a local build, use `args = ["D:/mindgate-mcp/dist/index.js", "--open-dashboard"]` in Codex TOML or `"args": ["D:/mindgate-mcp/dist/index.js", "--open-dashboard"]` in Antigravity JSON. Use the path from your existing configuration and restart the client after saving.
-
-The dashboard runs in a separate process on loopback. MCP continues to use stdio. Enabled clients using the same port share one dashboard address, and a remaining client can take over when the first exits. An occupied port never triggers a browser launch. Append `--port 5050` as two arguments to use a different port.
-
----
-
-## 🪝 Git Post-Commit Hook Adapter
-
-Automatically capture commit messages and touched files into your workspace memory without breaking your flow:
-
-```bash
-# Install hook into current Git repository
-mindgate-mcp git-hook install
-
-# Specify custom workspace name
-mindgate-mcp git-hook install --workspace my-project
-
-# Uninstall hook cleanly
-mindgate-mcp git-hook uninstall
-```
-
-The hook appends a non-blocking background task to `.git/hooks/post-commit` cleanly bounded by `# --- mindgate:post-commit ---` sentinels, preserving any existing Git hooks you have.
+&lt;/details&gt;
 
 ---
 
@@ -274,10 +246,10 @@ npm test            # 29 tests (real SQLite + FTS5)
 npm run build       # emit dist/
 ```
 
-All 29 tests pass on Linux; on Windows 28 pass + 1 skipped (POSIX `chmod` is unsupported). GitHub Actions is currently unavailable on this account, so **no green-CI badge is claimed** — tests are run locally before every release. Minimum runtimes: `^22.23.4 || ^24.22.1 || >=26.12.1`.
+All 29 tests pass on Linux; on Windows 28 pass + 1 skipped (POSIX `chmod` is unsupported).
 
 ---
 
 ## 📄 License
 
-Released under the [MIT License](./LICENSE).
+Released under the [MIT License](https://www.google.com/search?q=./LICENSE).
