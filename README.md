@@ -9,7 +9,7 @@
 **Stop re-explaining your codebase every morning.**  
 A **100% local-first persistent memory MCP server** for **Cursor**, **Claude Desktop**, **Antigravity**, **Windsurf**, and **Codex** — backed by SQLite + FTS5, automatic secret redaction, and auto-compiled `AGENTS.md` / `.cursorrules` / `CLAUDE.md` rules.
 
-[🇪🇬 التوثيق بالعربية](https://github.com/aaserag1/mindgate-mcp/blob/main/README.ar.md) · [🖥️ Landing Page](https://www.google.com/search?q=https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.npmjs.com/package/mindgate-mcp) · [🎬 58-second Demo](/docs/video/mindgate-launch.mp4)
+[🇪🇬 التوثيق بالعربية](https://github.com/aaserag1/mindgate-mcp/blob/main/README.ar.md) · [🖥️ Landing Page](https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.npmjs.com/package/mindgate-mcp) · [🎬 58-second Demo](/docs/video/mindgate-launch.mp4)
 
 &lt;!-- Tip: Replace the link below with an inline GIF (e.g. ./docs/video/mindgate-demo.gif) so visitors see it auto-play right here --&gt;
 > 🎬 **[Watch the 58-second demo](docs/video/mindgate-launch.mp4)** — Start a feature in Cursor, switch to Claude Desktop or Antigravity, and pick up with zero context loss.
