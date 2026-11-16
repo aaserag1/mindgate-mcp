@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: luxor-ubuntu-medium-4c-8g
 
     strategy:
       matrix:
