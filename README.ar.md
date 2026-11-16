@@ -1,18 +1,18 @@
 # 🧠 بوابة العقل — MindGate MCP (`v1.5.0`)
 
-[npm version](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp)
-[npm downloads](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp)
-[License: MIT](https://www.google.com/search?q=./LICENSE)
-[Security: Node2Shell Hardened](https://www.google.com/search?q=./SECURITY.md)
-[](https://github.com/aaserag1/mindgate-mcp)
+[![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
+[![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
+[![Version: 1.5.0](https://img.shields.io/badge/MCP-v1.5.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **توقف عن إعادة شرح مشروعك للذكاء الاصطناعي كل صباح.**  
 **خادم ذاكرة وسياق محلي 100%** لـ **Cursor** و**Claude Desktop** و**Antigravity** و**Windsurf** و**Codex** — مبني على `SQLite + FTS5`، مع تعتيم تلقائي للأسرار وتوليد تلقائي لملفات قواعد المشروع (`AGENTS.md` / `.cursorrules` / `CLAUDE.md`).
 
-[🇬🇧 Read in English](https://www.google.com/search?q=./README.md) · [🖥️ صفحة المشروع](https://www.google.com/search?q=https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp) · [🎬 فيديو العرض (58 ثانية)](https://www.google.com/search?q=./docs/video/mindgate-launch.mp4)
+[🇬🇧 Read in English](./README.md) · [🖥️ صفحة المشروع](https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.npmjs.com/package/mindgate-mcp) · [🎬 فيديو العرض (58 ثانية)](./docs/video/mindgate-launch.mp4)
 
-&lt;!-- نصيحة: استبدل السطر التالي بصورة GIF قصيرة (مثل ./docs/video/mindgate-demo.gif) لتعمل تلقائيًا داخل الصفحة --&gt;
-> 🎬 **[شاهد العرض التوضيحي (58 ثانية)](https://www.google.com/search?q=./docs/video/mindgate-launch.mp4)** — ابدأ العمل في Cursor، وانتقل إلى Claude Desktop أو Antigravity بنفس الذاكرة دون فقدان أي سياق.
+<!-- نصيحة: استبدل السطر التالي بصورة GIF قصيرة (مثل ./docs/video/mindgate-demo.gif) لتعمل تلقائيًا داخل الصفحة -->
+> 🎬 **[شاهد العرض التوضيحي (58 ثانية)](./docs/video/mindgate-launch.mp4)** — ابدأ العمل في Cursor، وانتقل إلى Claude Desktop أو Antigravity بنفس الذاكرة دون فقدان أي سياق.
 
 ---
 
@@ -43,8 +43,8 @@ npx -y mindgate-mcp init
 npx -y @smithery/cli install mindgate-mcp --client claude
 ```
 
-&lt;details&gt;
-&lt;summary&gt;أو البناء والتشغيل من الكود المصدري (Windows / macOS / Linux)&lt;/summary&gt;
+<details>
+<summary>أو البناء والتشغيل من الكود المصدري (Windows / macOS / Linux)</summary>
 
 ```bash
 git clone https://github.com/aaserag1/mindgate-mcp.git
@@ -68,7 +68,7 @@ npm run init-config
 }
 ```
 
-&lt;/details&gt;
+</details>
 
 ---
 
@@ -94,7 +94,7 @@ npm run init-config
 * **🔍 بحث دلالي هجين وثنائي اللغة عربي ↔ إنجليزي (`v1.4.0`–`v1.5.0`):** يدمج BM25 مع تضمينات ONNX محلية (`all-MiniLM-L6-v2`، ~23 ميجابايت، 384 بُعدًا) وملف `multilingual` عبر `mindgate-mcp download-model --multilingual` لاسترجاع القرارات الإنجليزية باستعلامات عربية أوفلاين بالكامل.
 * **🖥️ لوحة تحكم ويب محلية (`127.0.0.1:4242`):** واجهة بدون تبعيات خارجية (`mindgate-mcp ui`) تدعم الوضع الليلي والنهاري، والتبديل بين العربية (RTL) والإنجليزية (LTR)، والبحث الفوري، وتصدير JSON.
 * **🪝 محوّل خطاف Git:** تسجيل تلقائي لرسائل الـ Commit والملفات المعدلة عبر `mindgate-mcp git-hook install` دون تعطيل سير العمل.
-* **🛡️ حماية Node2Shell (CVE-2026-111497):** اتصال عبر `stdio` فقط (بدون منافذ شبكة)، وفحص إصدار Node/Bun، وقفل واجهة `node:zlib` Brotli قبل تحميل أي مكوّن آخر. التفاصيل في [SECURITY.md](https://www.google.com/search?q=./SECURITY.md).
+* **🛡️ حماية Node2Shell (CVE-2026-111497):** اتصال عبر `stdio` فقط (بدون منافذ شبكة)، وفحص إصدار Node/Bun، وقفل واجهة `node:zlib` Brotli قبل تحميل أي مكوّن آخر. التفاصيل في [SECURITY.md](./SECURITY.md).
 
 > ⚠️ MindGate **لا ينفذ أوامر shell**، و**لا يفتح أي منفذ شبكي لبروتوكول MCP**، و**لا يكشف الحقن الموجه في النصوص العشوائية**. راجع ملفات القواعد المولّدة قبل اعتمادها في مستودعك.
 
@@ -128,8 +128,8 @@ mindgate-mcp git-hook uninstall
 
 ## 🛠️ الأدوات (13) والموارد (2) والقوالب (1)
 
-&lt;details&gt;
-&lt;summary&gt;عرض القائمة الكاملة للأدوات الـ 13 والموارد والقوالب&lt;/summary&gt;
+<details>
+<summary>عرض القائمة الكاملة للأدوات الـ 13 والموارد والقوالب</summary>
 
 ### الأدوات المتاحة (13 أداة)
 
@@ -156,16 +156,16 @@ mindgate-mcp git-hook uninstall
 ### القوالب (1)
 * `mindgate-bootstrap` — قالب لبدء الجلسة وتحميل سياق المشروع وتفضيلاته فورًا (`workspace` اختياري).
 
-&lt;/details&gt;
+</details>
 
 ---
 
 ## 🏛️ المعمارية — كيف يعمل البرنامج
 
+![الرسم المعماري لـMindGate — الأنبوب المحلي الواحد](./docs/assets/architecture.png)
 
-
-&lt;details&gt;
-&lt;summary&gt;عرض مخطط Mermaid المعماري&lt;/summary&gt;
+<details>
+<summary>عرض مخطط Mermaid المعماري</summary>
 
 ```mermaid
 flowchart TB
@@ -200,7 +200,7 @@ flowchart TB
     RULES -->|"write / backup"| PROJ
 ```
 
-&lt;/details&gt;
+</details>
 
 ---
 
@@ -219,13 +219,13 @@ flowchart TB
 
 * **ما إصدار Node.js المطلوب؟**  
   **التوافق:** يعمل على Node 20+ (مع قفل واجهة `node:zlib` Brotli كطبقة حماية إضافية).  
-  **الموصى به للحماية الكاملة من CVE-2026-111497:** `^22.23.4 || ^24.22.1 || >=26.12.1` (راجع [SECURITY.md](https://www.google.com/search?q=./SECURITY.md)).
+  **الموصى به للحماية الكاملة من CVE-2026-111497:** `^22.23.4 || ^24.22.1 || >=26.12.1` (راجع [SECURITY.md](./SECURITY.md)).
 * **أين تُحفظ ذاكرتي؟** في `~/.mindgate/mindgate.db` (أو المسار المحدد في `MINDGATE_DB_PATH`). احذف الملف لمسح كل شيء.
 * **هل يمكن نقل الذاكرة بين الأجهزة؟** نعم — انسخ ملف `.db` أو استخدم `export_memory_snapshot`.
 * **هل يعمل أوفلاين؟** نعم — بعد التثبيت، لا شيء يغادر جهازك إطلاقًا.
 
-&lt;details&gt;
-&lt;summary&gt;🪟 حل مشكلة ويندوز (EPERM مع better-sqlite3)&lt;/summary&gt;
+<details>
+<summary>🪟 حل مشكلة ويندوز (EPERM مع better-sqlite3)</summary>
 
 إذا فشل `npm ci` برسالة `EPERM ... better-sqlite3\prebuilds\win32-x64.node`، فهناك وكيل أو محرر يستخدم الملف:
 
@@ -234,7 +234,7 @@ flowchart TB
 3. نفّذ `Rename-Item node_modules node_modules.old` ثم `npm ci` ثم `npm test`.
 4. احذف `node_modules.old` بعد الانتهاء.
 
-&lt;/details&gt;
+</details>
 
 ---
 
@@ -252,4 +252,4 @@ npm run build       # بناء مجلد dist/
 
 ## 📄 الرخصة
 
-مرخّص بموجب رخصة [MIT](https://www.google.com/search?q=./LICENSE) — مفتوح المصدر بالكامل.
+مرخّص بموجب رخصة [MIT](./LICENSE) — مفتوح المصدر بالكامل.
