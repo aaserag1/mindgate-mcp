@@ -1,42 +1,171 @@
 # 🧠 بوابة العقل — MindGate MCP (`v1.5.0`)
 
-[![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
-[![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.5.0](https://img.shields.io/badge/MCP-v1.5.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[npm version](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp)
+[npm downloads](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp)
+[License: MIT](https://www.google.com/search?q=./LICENSE)
+[Security: Node2Shell Hardened](https://www.google.com/search?q=./SECURITY.md)
+[](https://github.com/aaserag1/mindgate-mcp)
 
-**خادم ذاكرة وسياق محلي ودائم لوكلاء الذكاء الاصطناعي عبر بروتوكول سياق النموذج (MCP).**
+**توقف عن إعادة شرح مشروعك للذكاء الاصطناعي كل صباح.**  
+**خادم ذاكرة وسياق محلي 100%** لـ **Cursor** و**Claude Desktop** و**Antigravity** و**Windsurf** و**Codex** — مبني على `SQLite + FTS5`، مع تعتيم تلقائي للأسرار وتوليد تلقائي لملفات قواعد المشروع (`AGENTS.md` / `.cursorrules` / `CLAUDE.md`).
 
-[🇬🇧 Read in English](./README.md)
+[🇬🇧 Read in English](https://www.google.com/search?q=./README.md) · [🖥️ صفحة المشروع](https://www.google.com/search?q=https://aaserag1.github.io/mindgate-mcp/) · [📦 npm](https://www.google.com/search?q=https://www.npmjs.com/package/mindgate-mcp) · [🎬 فيديو العرض (58 ثانية)](https://www.google.com/search?q=./docs/video/mindgate-launch.mp4)
+
+&lt;!-- نصيحة: استبدل السطر التالي بصورة GIF قصيرة (مثل ./docs/video/mindgate-demo.gif) لتعمل تلقائيًا داخل الصفحة --&gt;
+> 🎬 **[شاهد العرض التوضيحي (58 ثانية)](https://www.google.com/search?q=./docs/video/mindgate-launch.mp4)** — ابدأ العمل في Cursor، وانتقل إلى Claude Desktop أو Antigravity بنفس الذاكرة دون فقدان أي سياق.
 
 ---
 
-## 💡 لماذا "بوابة العقل" (MindGate MCP)؟
+## ⚡ التشغيل السريع (في 30 ثانية)
 
-يعاني مطورو البرمجيات عند استخدام وكلاء الذكاء الاصطناعي (مثل **Antigravity**، و**Cursor**، و**Claude Desktop**، و**Windsurf**، و**Cline**) من مشكلتين رئيسيتين:
+### 1. التشغيل المباشر عبر `npx` (بدون تثبيت مسبق)
 
-1. **فقدان الذاكرة بين الجلسات:** في كل جلسة جديدة، ينسى الوكيل المعمارية البرمجية، القرارات السابقة، تفضيلاتك في كتابة الكود، والأخطاء التي تم إصلاحها بالأمس.
-2. **تسرّب الأسرار وتلويث الذاكرة:** ذاكرات الوكلاء التي تحفظ النصوص كما هي قد تخزن مفاتيح API مسربة، وقد تتحول إلى مصدر تعليمات ملغمة يقرأها وكلاء لاحقون.
+```bash
+npx -y mindgate-mcp init
+```
 
-**بوابة العقل (MindGate MCP)** تحل المشكلتين في خادم محلي واحد (Zero-Cloud):
-- 🗄️ **ذاكرة محلية دائمة فائقة السرعة (SQLite + FTS5 BM25):** تخزين واسترجاع فوري للقرارات المعمارية، إصلاحات الأخطاء، تفضيلات المطور، وملخصات تسليم الجلسات.
-- 🔄 **تعقب دورة حياة القرارات وإبطال القديم (`supersedes` / `status`):** إمكانية إبطال أو استبدال القرارات المعمارية القديمة (`supersedes`) أو وسمها كمهملة (`deprecate_memory`) لمنع الوكلاء من اتباع أنماط عفا عليها الزمن مع الحفاظ على سجل التدقيق التاريخي.
-- 📦 **ضغط وتكثيف سجل الجلسات (`compact_memories`):** دمج سلاسل الجلسات التاريخية الطويلة تلقائياً في ملخصات معالم رئيسية (Milestones) لتقليل استهلاك الـ Tokens والحفاظ على السياق المهم.
-- 🖥️ **لوحة تحكم محلية متكاملة عبر الويب (Web Dashboard):** واجهة ويب محلية خفيفة بدون أي تبعيات خارجية (`mindgate-mcp ui` أو `npm run ui`) تعمل على `http://127.0.0.1:4242`، تدعم الوضع الليلي والنهاري، والتبديل بين العربية (RTL) والإنجليزية (LTR)، والبحث الفوري وإدارة الذكريات بصرياً.
-- 🪝 **محوّل خطاف Git لحفظ سياق التعديلات (`mindgate-mcp git-hook`):** تسجيل تلقائي لرسائل الـ Commit والملفات المعدلة في ذاكرة المشروع بدون تعطيل سير عمل المطور.
-- 🔄 **توليد تلقائي لملفات قواعد المشروع (`AGENTS.md` / `.cursorrules` / `CLAUDE.md`):** يجمع قراراتك المعمارية وتفضيلاتك وإصلاحات الأخطاء في ملف قواعد موحد يقرأه أي وكيل تلقائياً فور فتح المشروع. الكتابة ذرّية، وأي ملف موجود يُنسخ احتياطياً (`.bak-<timestamp>`)، والملفات المكتوبة يدوياً لا تُمسح أبداً إلا بمعامل `force: true`.
-- ✏️ **تحديث الذكريات في مكانها والنسخ الاحتياطي المحمول:** عدّل أي قرار معماري دون فقدان المعرّف (`update_memory`)، وصدّر ذاكرة مشروعك بالكامل (`export_memory_snapshot`).
-- 🔒 **تعتيم الأسرار تلقائياً قبل الكتابة على القرص:** أنماط المفاتيح المعروفة (OpenAI، GitHub، AWS، Slack، Google، JWT، مفاتيح PEM) تُستبدل بـ `[REDACTED:<kind>]` في الذكريات وملخصات الجلسات والتفضيلات قبل تخزينها. استجابات الأدوات تتضمن عدد ما تم تعتيمه (`redacted_secrets`). يمكن تعطيل الميزة بـ `MINDGATE_REDACT_SECRETS=false` (غير مستحسن).
-- 🛡️ **إجراءات تخفيف Node2Shell (CVE-2026-111497):** نقل عبر stdio فقط (لا سطح هجوم شبكي إطلاقاً)، فحص إصدار Node.js مقابل الإصدارات المُصلحة (22.23.4 / 24.22.1 / 26.12.1، وBun ≥ 1.4.4)، وقفل أفضل-جهدي لواجهة فك الضغط في `node:zlib` يُثبّت قبل تحميل أي مكوّن آخر. التفاصيل والقيود في [SECURITY.md](./SECURITY.md).
+### 2. الإضافة إلى Cursor / Claude Desktop / Antigravity
 
-> ⚠️ MindGate **لا ينفذ أوامر shell**، و**لا يفتح أي اتصال شبكي**، و**لا يكشف الحقن الموجه في النصوص العشوائية**. محتوى الذكريات يُزرع كما هو في ملفات القواعد المولّدة — تعامل مع الذكريات كما تتعامل مع أي ملف ملاحظات محلي، وراجع ملفات القواعد قبل اعتمادها في مستودعك.
+```json
+{
+  "mcpServers": {
+    "mindgate": {
+      "command": "npx",
+      "args": ["-y", "mindgate-mcp"]
+    }
+  }
+}
+```
+
+### 3. التثبيت بنقرة واحدة عبر Smithery (لـ Claude Desktop)
+
+```bash
+npx -y @smithery/cli install mindgate-mcp --client claude
+```
+
+&lt;details&gt;
+&lt;summary&gt;أو البناء والتشغيل من الكود المصدري (Windows / macOS / Linux)&lt;/summary&gt;
+
+```bash
+git clone https://github.com/aaserag1/mindgate-mcp.git
+cd mindgate-mcp
+npm install
+npm run build
+npm run init-config
+```
+
+```json
+{
+  "mcpServers": {
+    "mindgate": {
+      "command": "node",
+      "args": ["C:\\path\\to\\mindgate-mcp\\dist\\index.js"],
+      "env": {
+        "MINDGATE_DB_PATH": "C:\\Users\\YOUR_USER\\.mindgate\\mindgate.db"
+      }
+    }
+  }
+}
+```
+
+&lt;/details&gt;
+
+---
+
+## 🆚 لماذا MindGate مقارنة بالبدائل؟
+
+| الميزة | **MindGate MCP** | [Mem0 MCP](https://mem0.ai/openmemory) | [Basic Memory](https://docs.basicmemory.com/integrations/cursor) |
+| :--- | :--- | :--- | :--- |
+| **محلي 100% (بدون سحابة أو API Key)** | ✅ قاعدة SQLite + FTS5 محلية | ❌ خدمة سحابية / مفتاح API | ✅ ملفات Markdown محلية |
+| **مشاركة السياق بين الوكلاء (Cursor ↔ Claude ↔ Codex)** | ✅ تسليم جلسات منظم | ✅ عبر الأدوات | ✅ عبر الأدوات |
+| **توليد تلقائي لـ `AGENTS.md` / `.cursorrules` / `CLAUDE.md`** | ✅ كتابة ذرّية + نسخة `.bak` | ❌ | ❌ |
+| **تعتيم الأسرار تلقائيًا قبل الحفظ** | ✅ إخفاء مفاتيح API وJWT | ❌ | ❌ |
+| **لوحة تحكم ويب محلية + خطاف Git** | ✅ مدمجة (`127.0.0.1:4242`) | ❌ | ❌ |
+| **بحث دلالي ثنائي اللغة (عربي ↔ إنجليزي) أوفلاين** | ✅ ملف ONNX اختياري | ❌ | ❌ |
+
+---
+
+## 💡 المميزات الأساسية
+
+* **🗄️ ذاكرة محلية فائقة السرعة (`SQLite + FTS5 BM25`):** تخزين واسترجاع فوري للقرارات المعمارية، إصلاحات الأخطاء، التفضيلات، وملخصات تسليم الجلسات — بدون أي اتصال شبكي أو telemetry.
+* **🔄 توليد تلقائي لملفات قواعد المشروع:** أداة `sync_workspace_rules` تجمع قراراتك في `AGENTS.md` أو `.cursorrules` أو `CLAUDE.md` أو `.windsurfrules` أو `MINDGATE_CONTEXT.md`. الكتابة ذرّية مع نسخة احتياطية (`.bak-<timestamp>`)، والملفات المكتوبة يدويًا محمية إلا بتمرير `force: true`.
+* **🔒 تعتيم الأسرار تلقائيًا قبل الكتابة:** أنماط المفاتيح المعروفة (OpenAI، GitHub، AWS، Slack، Google، JWT، مفاتيح PEM) تُستبدل بـ `[REDACTED:<kind>]` قبل لمس القرص. يمكنك تعطيلها بـ `MINDGATE_REDACT_SECRETS=false` (غير مستحسن).
+* **🔄 دورة حياة القرارات وضغط الجلسات:** إبطال القرارات القديمة (`supersedes`) أو وسمها كمهملة (`deprecate_memory`)، وتحديثها في مكانها (`update_memory`)، وضغط سلاسل الجلسات الطويلة (`compact_memories`) لتوفير الـ Tokens.
+* **🔍 بحث دلالي هجين وثنائي اللغة عربي ↔ إنجليزي (`v1.4.0`–`v1.5.0`):** يدمج BM25 مع تضمينات ONNX محلية (`all-MiniLM-L6-v2`، ~23 ميجابايت، 384 بُعدًا) وملف `multilingual` عبر `mindgate-mcp download-model --multilingual` لاسترجاع القرارات الإنجليزية باستعلامات عربية أوفلاين بالكامل.
+* **🖥️ لوحة تحكم ويب محلية (`127.0.0.1:4242`):** واجهة بدون تبعيات خارجية (`mindgate-mcp ui`) تدعم الوضع الليلي والنهاري، والتبديل بين العربية (RTL) والإنجليزية (LTR)، والبحث الفوري، وتصدير JSON.
+* **🪝 محوّل خطاف Git:** تسجيل تلقائي لرسائل الـ Commit والملفات المعدلة عبر `mindgate-mcp git-hook install` دون تعطيل سير العمل.
+* **🛡️ حماية Node2Shell (CVE-2026-111497):** اتصال عبر `stdio` فقط (بدون منافذ شبكة)، وفحص إصدار Node/Bun، وقفل واجهة `node:zlib` Brotli قبل تحميل أي مكوّن آخر. التفاصيل في [SECURITY.md](https://www.google.com/search?q=./SECURITY.md).
+
+> ⚠️ MindGate **لا ينفذ أوامر shell**، و**لا يفتح أي منفذ شبكي لبروتوكول MCP**، و**لا يكشف الحقن الموجه في النصوص العشوائية**. راجع ملفات القواعد المولّدة قبل اعتمادها في مستودعك.
+
+---
+
+## 🖥️ لوحة التحكم المحلية عبر الويب
+
+```bash
+mindgate-mcp ui              # التشغيل على http://127.0.0.1:4242
+mindgate-mcp ui --port 5050  # تحديد منفذ مخصص
+npm run ui                   # عند التشغيل من الكود المصدري
+```
+
+* **إدارة بصرية للذكريات:** بحث فوري بتقنية FTS5 BM25، شارات الحالة (`نشط`، `مستبدل`، `مهمل`)، وفلترة حسب المشروع والتصنيف.
+* **دعم العربية والإنجليزية:** تبديل فوري بين العربية (RTL) والإنجليزية (LTR) مع الوضع الليلي والنهاري.
+* **الفتح التلقائي مع عملاء MCP:** أضف `--open-dashboard` (واختياريًا `--port 5050`) إلى `args` في إعدادات العميل.
+
+---
+
+## 🪝 محوّل خطاف Git (`Post-Commit Hook`)
+
+```bash
+mindgate-mcp git-hook install
+mindgate-mcp git-hook install --workspace my-project
+mindgate-mcp git-hook uninstall
+```
+
+يضيف مهمة خلفية غير معطلة إلى `.git/hooks/post-commit` محصورة بعلامات `# --- mindgate:post-commit ---` للحفاظ على أي خطافات سابقة لديك.
+
+---
+
+## 🛠️ الأدوات (13) والموارد (2) والقوالب (1)
+
+&lt;details&gt;
+&lt;summary&gt;عرض القائمة الكاملة للأدوات الـ 13 والموارد والقوالب&lt;/summary&gt;
+
+### الأدوات المتاحة (13 أداة)
+
+| الأداة (Tool) | الوظيفة الأساسية |
+| :--- | :--- |
+| `remember_decision` | حفظ ذاكرة دائمة (`architecture` / `decision` / `bugfix` / `convention` / `context`) مع تعتيم الأسرار وإمكانية تمرير `supersedes` |
+| `update_memory` | تحديث ذاكرة موجودة في مكانها عبر المعرّف مع تحديث `status` ومزامنة فهرس `FTS5` |
+| `recall_context` | بحث بتقنية `FTS5 BM25` (والبحث الدلالي عند توفره) مع التصفية بالمشروع والتصنيف والحالة؛ يرجع للأحدث تلقائيًا (`search.fallback: true`) |
+| `deprecate_memory` | وسم ذاكرة بأنها مهملة عبر المعرّف مع سبب اختياري دون حذف سجلها التاريخي |
+| `compact_memories` | ضغط سجل الجلسات التاريخية إلى ملخصات معالم لتقليل استهلاك الـ Tokens |
+| `log_session_summary` | حفظ ملخص تسليم الجلسة (ما تم إنجازه، الخطوات القادمة، الملفات النشطة) للوكيل التالي |
+| `get_dashboard_url` | جلب عنوان لوحة التحكم المحلية (`http://127.0.0.1:4242`) |
+| `sync_workspace_rules` | توليد `AGENTS.md` أو `.cursorrules` أو `CLAUDE.md` أو `.windsurfrules` أو `MINDGATE_CONTEXT.md` |
+| `export_memory_snapshot` | تصدير نسخة احتياطية `JSON` من الذكريات وملخصات الجلسات والتفضيلات |
+| `set_user_preference` | حفظ أو تحديث تفضيل دائم للمطور (`key`/`value`) |
+| `get_user_preferences` | استرجاع كل التفضيلات المحفوظة مع فلترة اختيارية حسب `category` |
+| `list_workspaces` | عرض كل المشاريع المخزنة مع عدد الذكريات وآخر تحديث |
+| `delete_memory` | حذف ذاكرة عبر المعرّف الخاص بها |
+
+### الموارد (2)
+* `mindgate://context/latest` — لقطة من أحدث الذكريات وآخر تسليم جلسة وتفضيلات المطور (JSON).
+* `mindgate://rules/agents-md` — معاينة حية لملف `AGENTS.md` المولّد تلقائيًا (Markdown).
+
+### القوالب (1)
+* `mindgate-bootstrap` — قالب لبدء الجلسة وتحميل سياق المشروع وتفضيلاته فورًا (`workspace` اختياري).
+
+&lt;/details&gt;
 
 ---
 
 ## 🏛️ المعمارية — كيف يعمل البرنامج
 
-![الرسم المعماري لـMindGate — الأنبوب المحلي الواحد](./docs/assets/architecture.png)
+
+
+&lt;details&gt;
+&lt;summary&gt;عرض مخطط Mermaid المعماري&lt;/summary&gt;
 
 ```mermaid
 flowchart TB
@@ -50,7 +179,7 @@ flowchart TB
     subgraph Server["MindGate MCP Server — محلي 100%"]
         direction TB
         BOOT["1 · security/bootstrap.ts — أول ملف يُحمّل<br/>يقفل واجهة node:zlib Brotli<br/>+ فحص إصدار Node/Bun (CVE-2026-111497)"]
-        TOOLS["2 · index.ts — معالجات MCP<br/>10 أدوات · 2 موارد · قالب واحد<br/>stdio JSON-RPC فقط"]
+        TOOLS["2 · index.ts — معالجات MCP<br/>13 أداة · 2 موارد · قالب واحد<br/>stdio JSON-RPC فقط"]
         VALID["3 · validation.ts<br/>فحص الأنواع والحدود والأحجام<br/>إدخال غير صالح → isError: true"]
         REDACT["4 · security/secretRedactor.ts<br/>sk-…, AKIA…, JWT, PEM ← [REDACTED:kind]"]
         STORE["5 · db/memoryStore.ts<br/>SQLite (WAL) + FTS5 BM25<br/>triggers تحافظ على المزامنة تلقائيًا"]
@@ -71,49 +200,7 @@ flowchart TB
     RULES -->|"write / backup"| PROJ
 ```
 
-**رحلة الطلب (مرقّمة كما في الرسم):**
-
-1. أي عميل MCP يشغّل `mindgate-mcp` كعملية فرعية، وكل التواصل يتم عبر **stdio** (JSON-RPC بسطر واحد لكل رسالة) — لا منافذ شبكة، لا HTTP، لا telemetry.
-2. أول ملف يُقيَّم هو `src/security/bootstrap.ts` (يُستورد قبل كل شيء): يقفل واجهة فك ضغط Brotli العامة في `node:zlib`، ويفحص إصدار Node/Bun مقابل الإصدارات المُصلحة من CVE-2026-111497.
-3. كل استدعاء أداة يُفحص في وقت التشغيل — الأنواع، المديات، حدود الأحجام، المعرفات الموجبة. أي إدخال غير صالح يرجع خطأ أداة (`isError: true`) برسالة وصفية، ولا يمكن أن يسبب crash.
-4. في مسارات الكتابة (الحفظ / التحديث / تسليم الجلسة / التفضيلات)، تُعمى الأسرار **قبل** أن تلمس القرص.
-5. التخزين SQLite + FTS5 مضمّن (`better-sqlite3`) في `~/.mindgate/mindgate.db` — وضع WAL وصلاحيات للمالك فقط. وtriggers تحافظ على تزامن فهرس FTS تلقائيًا عند الإضافة/التحديث/الحذف.
-6. أداة `sync_workspace_rules` تحوّل الذكريات إلى Markdown وتكتبها بشكل ذرّي (ملف مؤقت + rename) مع نسخة احتياطية بختم زمني (`.bak-<timestamp>`)؛ وأي ملف لا يحمل العلامة `<!-- mindgate:auto-generated -->` لا يُستبدل إلا بمعامل `force: true`.
-
-> حدود الثقة: الذكريات **بيانات وليست تعليمات**؛ تعتيم الأسرار أفضل-جهدي ويعتمد على الأنماط المعروفة؛ قفل Brotli خط دفاع إضافي. التفاصيل الكاملة في [SECURITY.md](./SECURITY.md).
-
----
-
-## 🛠️ الأدوات المتاحة للوكيل (13 أداة)
-
-| الأداة (Tool) | الوظيفة الأساسية |
-| :--- | :--- |
-| `remember_decision` | حفظ ذاكرة دائمة (معمارية / قرار / إصلاح خطأ / تفضيل / سياق) مع تعتيم تلقائي للأسرار وإمكانية تمرير `supersedes` لإلغاء قرارات سابقة |
-| `update_memory` | تحديث ذاكرة موجودة في مكانها عبر المعرّف مع تحديث الحالة `status` (`active`/`superseded`/`deprecated`) ومزامنة فهرس البحث `FTS5` |
-| `recall_context` | بحث بالترتيب `FTS5 BM25` مع تصفية حسب المشروع أو التصنيف أو حالة دورة الحياة `status` (`active`/`superseded`/`deprecated`/`all`، الافتراضي: `active`). لو لا توجد نتائج مطابقة يرجع الأحدث ويعلّم ذلك صراحة (`search.fallback: true`) |
-| `deprecate_memory` | وسم ذاكرة بأنها مهملة (Deprecated) عبر المعرّف مع سبب اختياري، واستبعادها من الاستدعاء الافتراضي دون حذفها |
-| `compact_memories` | ضغط وتكثيف سجل الجلسات التاريخية إلى ملخص معالم مدمج لتقليل استهلاك الـ Tokens والحفاظ على السياق |
-| `log_session_summary` | حفظ ملخص تسليم الجلسة (ما تم إنجازه، الخطوات القادمة، الملفات النشطة) ليستكمله الوكيل التالي |
-| `get_dashboard_url` | جلب عنوان لوحة التحكم المحلية لـ MindGate (`http://127.0.0.1:4242`) |
-| `sync_workspace_rules` | توليد `AGENTS.md` أو `.cursorrules` أو `CLAUDE.md` أو `.windsurfrules` أو `MINDGATE_CONTEXT.md` من الذاكرة. كتابة ذرّية + نسخة احتياطية، والملفات المكتوبة يدوياً محمية ما لم تمرر `force: true` |
-| `export_memory_snapshot` | تصدير نسخة احتياطية `JSON` من الذكريات وملخصات الجلسات والتفضيلات |
-| `set_user_preference` | حفظ أو تحديث تفضيل دائم للمطور (`key`/`value`) |
-| `get_user_preferences` | استرجاع كل التفضيلات المحفوظة، مع فلترة اختيارية حسب `category` |
-| `list_workspaces` | عرض كل المشاريع المخزنة مع عدد الذكريات وآخر تحديث |
-| `delete_memory` | حذف ذاكرة منتهية الصلاحية عبر المعرّف |
-
-كل وسائط الأدوات تُفحص في وقت التشغيل؛ أي إدخال غير صالح يرجع خطأ أداة (`isError: true`) برسالة واضحة بدلاً من خطأ بروتوكول.
-
----
-
-## 📦 الموارد والقوالب الذكية (MCP Resources & Prompts)
-
-### الموارد (Resources)
-- `mindgate://context/latest`: لقطة من أحدث الذكريات + آخر تسليم جلسة + تفضيلات المطور (JSON).
-- `mindgate://rules/agents-md`: معاينة حية لملف قواعد الوكلاء (`AGENTS.md`) المولّد تلقائياً (Markdown).
-
-### القوالب التوجيهية (Prompts)
-- `mindgate-bootstrap`: قالب جاهز لبدء جلسة برمجية واسترجاع سياق المشروع فوراً. وسيط اختياري: `workspace`.
+&lt;/details&gt;
 
 ---
 
@@ -121,157 +208,48 @@ flowchart TB
 
 | المتغير | الافتراضي | الوصف |
 | :--- | :--- | :--- |
-| `MINDGATE_DB_PATH` | `~/.mindgate/mindgate.db` | المسار المطلق لملف قاعدة البيانات. المجلد الأب يُنشأ تلقائياً بصلاحية `0700`. |
-| `MINDGATE_DEFAULT_WORKSPACE` | `global` | المشروع الافتراضي عندما لا تُمرر `workspace` في الاستدعاء. |
-| `MINDGATE_REDACT_SECRETS` | `true` | اضبطه `false` لتعطيل تعتيم الأسرار قبل الكتابة (غير مستحسن). |
-| `MINDGATE_STRICT_NODE2SHELL` | `false` | اضبطه `true` لرفض التشغيل على إصدار Node.js غير مُصلح. |
-
-ملف قاعدة البيانات يُنشأ بصلاحية `0600` (والمجلد `0700`). محتوياته **نص صريح بالتصميم** — تعامل معه كمخزن أسرار محلي.
+| `MINDGATE_DB_PATH` | `~/.mindgate/mindgate.db` | المسار المطلق لملف قاعدة البيانات (المجلد `0700` والملف `0600`). |
+| `MINDGATE_DEFAULT_WORKSPACE` | `global` | المشروع الافتراضي عند عدم تمرير `workspace`. |
+| `MINDGATE_REDACT_SECRETS` | `true` | اضبطه `false` لتعطيل تعتيم الأسرار عند الكتابة (غير مستحسن). |
+| `MINDGATE_STRICT_NODE2SHELL` | `false` | اضبطه `true` لرفض الإقلاع على إصدار Node.js غير مُصلح. |
 
 ---
 
-## 🚀 التثبيت والتشغيل السريع
+## ❓ الأسئلة الشائعة والتوافق
 
-### الطريقة الأولى: التشغيل المباشر عبر `npx` (منشور على npm)
+* **ما إصدار Node.js المطلوب؟**  
+  **التوافق:** يعمل على Node 20+ (مع قفل واجهة `node:zlib` Brotli كطبقة حماية إضافية).  
+  **الموصى به للحماية الكاملة من CVE-2026-111497:** `^22.23.4 || ^24.22.1 || >=26.12.1` (راجع [SECURITY.md](https://www.google.com/search?q=./SECURITY.md)).
+* **أين تُحفظ ذاكرتي؟** في `~/.mindgate/mindgate.db` (أو المسار المحدد في `MINDGATE_DB_PATH`). احذف الملف لمسح كل شيء.
+* **هل يمكن نقل الذاكرة بين الأجهزة؟** نعم — انسخ ملف `.db` أو استخدم `export_memory_snapshot`.
+* **هل يعمل أوفلاين؟** نعم — بعد التثبيت، لا شيء يغادر جهازك إطلاقًا.
 
-```bash
-npx -y mindgate-mcp init
-```
+&lt;details&gt;
+&lt;summary&gt;🪟 حل مشكلة ويندوز (EPERM مع better-sqlite3)&lt;/summary&gt;
 
-### الطريقة الثانية: التشغيل من المصدر
+إذا فشل `npm ci` برسالة `EPERM ... better-sqlite3\prebuilds\win32-x64.node`، فهناك وكيل أو محرر يستخدم الملف:
 
-```bash
-# 1. استنساخ المستودع
-git clone https://github.com/aaserag1/mindgate-mcp.git
-cd mindgate-mcp
+1. أغلق أي برنامج يستخدم MindGate ونوافذ VS Code المفتوحة على المستودع.
+2. نفّذ `Get-Process node | Select-Object Id, Path` ثم `Stop-Process -Id <ID> -Force`.
+3. نفّذ `Rename-Item node_modules node_modules.old` ثم `npm ci` ثم `npm test`.
+4. احذف `node_modules.old` بعد الانتهاء.
 
-# 2. تثبيت الحزم البرمجية
-npm install
-
-# 3. بناء المشروع
-npm run build
-
-# 4. طباعة إعدادات الربط الجاهزة لـ Antigravity / Claude / Cursor
-npm run init-config
-```
-
-### مثال إعداد على Windows (Antigravity / Cursor / Claude Desktop)
-
-```json
-{
-  "mcpServers": {
-    "mindgate": {
-      "command": "node",
-      "args": ["C:\\path\\to\\mindgate-mcp\\dist\\index.js"],
-      "env": {
-        "MINDGATE_DB_PATH": "C:\\Users\\YOUR_USER\\.mindgate\\mindgate.db"
-      }
-    }
-  }
-}
-```
-
-### مثال إعداد عبر `npx` (لجميع الأنظمة)
-
-```json
-{
-  "mcpServers": {
-    "mindgate": {
-      "command": "npx",
-      "args": ["-y", "mindgate-mcp"]
-    }
-  }
-}
-```
-
-### التثبيت بنقرة واحدة عبر Smithery
-
-لتثبيت MindGate تلقائياً لـ Claude Desktop عبر [Smithery](https://smithery.ai):
-
-```bash
-npx -y @smithery/cli install mindgate-mcp --client claude
-```
+&lt;/details&gt;
 
 ---
 
-## 🖥️ لوحة التحكم المحلية عبر الويب (Web Dashboard)
-
-يتضمن MindGate لوحة تحكم ويب خفيفة تعمل محلياً فقط ومربوطة بـ `127.0.0.1` ولا تفتح أي منفذ على الشبكة الخارجية:
+## 🧪 الاختبارات والتحقق
 
 ```bash
-# تشغيل لوحة التحكم عبر سطر الأوامر (المنفذ الافتراضي 4242)
-mindgate-mcp ui
-
-# أو تحديد منفذ مخصص
-mindgate-mcp ui --port 5050
-
-# أو عند التشغيل من الكود المصدري
-npm run ui
+npm run typecheck   # فحص الأنواع (TypeScript)
+npm test            # تشغيل 29 اختبارًا (SQLite + FTS5)
+npm run build       # بناء مجلد dist/
 ```
 
-ثم افتح [http://127.0.0.1:4242](http://127.0.0.1:4242) في متصفحك:
-- **إدارة بصرية للذكريات:** بحث فوري بتقنية FTS5 BM25، عرض شارات دورة حياة القرارات (`نشط`، `مستبدل`، `مهمل`)، مع فلترة حسب المشروع والتصنيف.
-- **دعم كامل للغتين:** زر سريع للتبديل الفوري بين العربية (RTL) والإنجليزية (LTR).
-- **الوضع الليلي والنهاري (Dark/Light):** مظهر عصري ومريح للعين يتماشى مع بيئات التطوير الحديثة.
-- **إدارة دورة حياة القرارات:** إضافة ذكريات جديدة مع ربط الإلغاء (`supersedes`)، أو وسم القرارات بأنها مهملة، أو حذفها.
-- **ضغط الجلسات بضغطة زر:** دمج سجل الجلسات السابقة إلى ملخصات رئيسية لتقليل استهلاك الـ Tokens.
-- **النسخ الاحتياطي:** تنزيل لقطة كاملة (JSON Snapshot) مباشرة من المتصفح.
-
-لتشغيل لوحة التحكم وفتحها في المتصفح الافتراضي عند تشغيل MindGate، أضف `--open-dashboard` إلى وسائط تشغيل MindGate في إعدادات العميل. في Codex استخدم مثلاً `args = ["D:/mindgate-mcp/dist/index.js", "--open-dashboard"]`، وفي Antigravity استخدم `"args": ["D:/mindgate-mcp/dist/index.js", "--open-dashboard"]`. احتفظ بمسار التثبيت الموجود عندك وأعد تشغيل العميل بعد الحفظ.
-
-تعمل اللوحة في عملية منفصلة على الجهاز المحلي، ويظل اتصال MCP عبر `stdio`. عند استخدام نفس المنفذ، يفتح العميل الأول اللوحة ويمكن للعميل الآخر تولّي تشغيلها عند إغلاقه. إذا كان المنفذ مشغولاً، لا يفتح MindGate أي صفحة بسببه. لتحديد منفذ مختلف أضف `--port` ورقم المنفذ كوسيطين منفصلين.
+تنجح الاختبارات الـ 29 كاملة على Linux؛ وعلى Windows تنجح 28 وتُتخطى واحدة (لأن `chmod` في POSIX غير مدعوم).
 
 ---
 
-## 🪝 محوّل خطاف Git لحفظ سياق التعديلات (Git Post-Commit Hook)
+## 📄 الرخصة
 
-احفظ رسائل التعديل (Commit messages) والملفات المعدلة تلقائياً في ذاكرة المشروع بدون مقاطعة عملك:
-
-```bash
-# تثبيت الخطاف في مستودع Git الحالي
-mindgate-mcp git-hook install
-
-# تحديد اسم مخصص لمشروع الذاكرة
-mindgate-mcp git-hook install --workspace my-project
-
-# إلغاء تثبيت الخطاف وإزالته نظيفاً
-mindgate-mcp git-hook uninstall
-```
-
-يضيف الخطاف مهمة خلفية غير معطلة إلى `.git/hooks/post-commit` محصورة بعلامات دقيقة تحافظ على أي خطافات سابقة لديك.
-
----
-
-## 🛡️ كيف يعمل درع الحماية (Node2Shell Guard)؟
-
-وحدة مستقلة (`src/security/node2shellGuard.ts`) تعمل على ثلاث طبقات:
-1. **النقل عبر stdio فقط:** لا منفذ شبكة، لا HTTP، لا سطح هجوم عن بُعد.
-2. **فحص الإصدار عند الإقلاع:** يحذر من تشغيل Node.js أقدم من الإصدارات المُصلحة (أو Bun أقدم من 1.4.4) عبر `stderr` (بدون تلويث بروتوكول JSON-RPC). اضبط `MINDGATE_STRICT_NODE2SHELL=true` لرفض الإقلاع كلياً.
-3. **قفل واجهة Brotli في `node:zlib`:** استبدال `createBrotliDecompress` و`brotliDecompress` و`brotliDecompressSync` وصنف `BrotliDecompress` بدوال تطلق خطأ، قبل تحميل أي مكوّن آخر (`src/security/bootstrap.ts` أول import في نقطة الدخول).
-
-**القيود بكل صراحة (من SECURITY.md):** القفل أفضل-جهدي وليس حدًا أمنيًا كاملًا — لا يمنع الإضافات الأصلية (native addons) ولا أي مراجع أُنقطت قبل تشغيله، والتشغيل على إصدار Node.js مُصلح هو الحل النهائي. الخطورة الفعلية على هذا الخادم ضئيلة أصلًا لأنه لا يفك ضغط أي بيانات Brotli.
-
-بالإضافة إلى: **تعتيم الأسرار قبل الكتابة على القرص** (انظر `SECURITY.md`).
-
----
-
-## 🧪 تشغيل الاختبارات وفحص الكود
-
-```bash
-# فحص الأنواع البرمجية (TypeScript)
-npm run typecheck
-
-# تشغيل حزمة الاختبارات (node:test — تشمل SQLite + FTS5 الحقيقية)
-npm test
-
-# بناء المشروع
-npm run build
-```
-
-كل الاختبارات الـ29 تنجح على Linux؛ وعلى Windows تنجح 28 وتُتخطى واحدة (أمر `chmod` في POSIX غير مدعوم). الـGitHub Actions حاليًا غير متاحة على هذا الحساب، لذلك لا يوجد badge أخضر لـCI — الاختبارات تُشغّل محليًا قبل كل إصدار. الحد الأدنى: `^22.23.4 || ^24.22.1 || >=26.12.1`.
-
----
-
-## 📄 الرخصة (License)
-
-مرخّص بموجب رخصة [MIT](./LICENSE) — مفتوح المصدر بالكامل ومجاني للاستخدام الشخصي والتجاري.
+مرخّص بموجب رخصة [MIT](https://www.google.com/search?q=./LICENSE) — مفتوح المصدر بالكامل.
