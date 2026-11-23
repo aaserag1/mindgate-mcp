@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MindGate (بوابة العقل) v1.5.0 — Model Context Protocol (MCP) Server
+ * MindGate (بوابة العقل) v1.6.0 — Model Context Protocol (MCP) Server
  *
  * A unified, local-first memory & context gateway for Antigravity, OpenCode,
  * Codex, Cursor, and Claude. Mitigates Node2Shell (CVE-2026-111497).
@@ -47,6 +47,8 @@ import {
   optionalMemoryStatus,
   optionalRecallStatus,
   optionalPositiveIntArray,
+  optionalReviewDate,
+  requiredConfirmAction,
 } from "./validation.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,7 +65,7 @@ function printInitGuide(): void {
   const scriptPath = path.resolve(__filename).replace(/\\/g, "/");
   console.log(`
 =======================================================================
-🧠 MindGate v1.5.0 (بوابة العقل) — Configuration Generator
+🧠 MindGate v1.6.0 (بوابة العقل) — Configuration Generator
 🛡️ Security Status: ${securityStatus.advisory}
 =======================================================================
 
@@ -222,7 +224,7 @@ async function runMcpServer(): Promise<void> {
   const server = new Server(
     {
       name: "mindgate-mcp",
-      version: "1.5.0",
+      version: "1.6.0",
     },
     {
       capabilities: {
@@ -256,6 +258,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "bugfix",
                 "convention",
                 "context",
+                "assumption",
               ],
               description: "Category of the memory record.",
             },
@@ -311,6 +314,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "bugfix",
                 "convention",
                 "context",
+                "assumption",
               ],
               description: "Optional updated category.",
             },
@@ -370,6 +374,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "bugfix",
                 "convention",
                 "context",
+                "assumption",
               ],
               description: "Optional category filter.",
             },
@@ -562,6 +567,104 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ["id"],
+        },
+      },
+      {
+        name: "record_assumption",
+        description:
+          "Record a dated, owned assumption in the MindGate ledger (category 'assumption'). An assumption is a claim about the world that can go stale — it always carries a review_date and an owner. If review_date is omitted it defaults to 30 days from today. Expired assumptions are excluded from recall_context until confirmed or replaced.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            workspace: {
+              type: "string",
+              description: "Project workspace identifier (defaults to MINDGATE_DEFAULT_WORKSPACE or 'global').",
+            },
+            title: {
+              type: "string",
+              description: "Concise title of the assumption (e.g. 'API rate limit is 100 req/min').",
+            },
+            content: {
+              type: "string",
+              description: "The assumption itself: what is believed, why, and what depends on it.",
+            },
+            owner: {
+              type: "string",
+              description: "Who owns this assumption and must confirm it at review time (e.g. a person or team).",
+            },
+            review_date: {
+              type: "string",
+              description: "ISO date (YYYY-MM-DD) by which this assumption must be re-checked. Defaults to 30 days from today.",
+            },
+            tags: {
+              type: "array",
+              items: { type: "string" },
+              description: "Optional searchable keywords/tags.",
+            },
+            source_agent: {
+              type: "string",
+              description: "Name of the AI tool recording this assumption.",
+            },
+          },
+          required: ["title", "content"],
+        },
+      },
+      {
+        name: "review_assumptions",
+        description:
+          "List assumptions whose review date has arrived (overdue, oldest first), plus a count of those due within 7 days. Overdue assumptions are excluded from recall_context until confirmed or replaced with confirm_assumption.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            workspace: {
+              type: "string",
+              description: "Project workspace to review (defaults to MINDGATE_DEFAULT_WORKSPACE or 'global').",
+            },
+            include_global: {
+              type: "boolean",
+              description: "Whether to also include assumptions from the 'global' workspace (default true).",
+            },
+          },
+        },
+      },
+      {
+        name: "confirm_assumption",
+        description:
+          "Resolve an assumption that needs review. 'confirm' keeps the record and extends its review date (defaults to 30 days from today). 'replace' creates a new assumption record with the updated title/content/owner that supersedes the old one; the old record is kept for audit.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "number",
+              description: "Numeric ID of the assumption record to resolve.",
+            },
+            action: {
+              type: "string",
+              enum: ["confirm", "replace"],
+              description: "'confirm' extends the review date; 'replace' supersedes the old record with a new one.",
+            },
+            review_date: {
+              type: "string",
+              description: "New ISO review date (YYYY-MM-DD) for the confirmed or replacement assumption. Defaults to 30 days from today.",
+            },
+            title: {
+              type: "string",
+              description: "Updated title (only used with action 'replace').",
+            },
+            content: {
+              type: "string",
+              description: "Updated content (only used with action 'replace').",
+            },
+            owner: {
+              type: "string",
+              description: "Updated owner (only used with action 'replace').",
+            },
+            source_agent: {
+              type: "string",
+              description: "Name of the AI tool resolving this assumption.",
+            },
+          },
+          required: ["id", "action"],
         },
       },
       {
@@ -926,6 +1029,113 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+    case "record_assumption": {
+      const { record, redactions, defaulted_review_date } = store.recordAssumption({
+        workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
+        title: requiredString(args.title, "title", LIMITS.titleMax),
+        content: requiredString(args.content, "content", LIMITS.contentMax),
+        tags: optionalStringArray(args.tags, "tags", LIMITS.tagsMax, LIMITS.tagMax) ?? [],
+        sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
+        owner: optionalString(args.owner, "owner", LIMITS.ownerMax),
+        reviewDate: optionalReviewDate(args.review_date),
+      });
+      // Async embedding — best-effort, non-blocking
+      if (LocalEmbedder.isAvailable()) {
+        const embedText = `${record.title} ${record.content}`;
+        embedder.embed(embedText).then((vec) => {
+          if (vec) store.setEmbedding(record.id, vec);
+        }).catch(() => { /* graceful degradation */ });
+      }
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                status: "saved",
+                message: defaulted_review_date
+                  ? `Assumption stored in MindGate (بوابة العقل). No review_date given — review due in 30 days (${record.review_date}).`
+                  : "Assumption stored in MindGate (بوابة العقل).",
+                redacted_secrets: redactions,
+                record,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
+    case "review_assumptions": {
+      const result = store.reviewAssumptions({
+        workspace: optionalString(args.workspace, "workspace", LIMITS.workspaceMax),
+        includeGlobal:
+          optionalBoolean(args.include_global, "include_global") ?? true,
+      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                status: "ok",
+                message:
+                  result.overdue.length > 0
+                    ? `${result.overdue.length} assumption(s) overdue for review — confirm or replace them with confirm_assumption before acting on them.`
+                    : "No assumptions overdue for review.",
+                ...result,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
+    case "confirm_assumption": {
+      const id = optionalPositiveInt(args.id, "id");
+      if (id === undefined) {
+        throw new ToolInputError('Missing or invalid required field: "id" (positive integer expected).');
+      }
+      const result = store.confirmAssumption({
+        id,
+        action: requiredConfirmAction(args.action),
+        reviewDate: optionalReviewDate(args.review_date),
+        title: optionalString(args.title, "title", LIMITS.titleMax),
+        content: optionalString(args.content, "content", LIMITS.contentMax),
+        owner: optionalString(args.owner, "owner", LIMITS.ownerMax),
+        sourceAgent: optionalString(args.source_agent, "source_agent", LIMITS.sourceAgentMax),
+      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              result
+                ? {
+                    status: result.action,
+                    message:
+                      result.action === "confirmed"
+                        ? `Assumption #${id} confirmed — next review due ${result.record.review_date}.`
+                        : `Assumption #${id} replaced by #${result.record.id}; the old record is kept as superseded for audit.`,
+                    redacted_secrets: result.redactions,
+                    record: result.record,
+                  }
+                : {
+                    status: "not_found",
+                    message: `No assumption found with ID #${id}.`,
+                    id,
+                  },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
     case "compact_memories": {
       const workspace = optionalString(args.workspace, "workspace", LIMITS.workspaceMax);
       const maxKeep = optionalPositiveInt(args.max_sessions_to_keep, "max_sessions_to_keep") ?? 5;
@@ -1078,7 +1288,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
           role: "user",
           content: {
             type: "text",
-            text: `Please review my persistent project memory and preferences from MindGate (بوابة العقل) before proceeding:\n\n${JSON.stringify(
+            text: `Please review my persistent project memory and preferences from MindGate (بوابة العقل) before proceeding. Assumptions listed under assumptions_needing_review are overdue for review — do not act on them until the operator confirms or replaces them.\n\n${JSON.stringify(
               context,
               null,
               2

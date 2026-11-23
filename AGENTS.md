@@ -1,4 +1,4 @@
-# AGENTS.md — MindGate MCP Agent Guidelines (v1.5.0)
+# AGENTS.md — MindGate MCP Agent Guidelines (v1.6.0)
 
 This repository implements **MindGate MCP (`mindgate-mcp`)**, a local-first persistent memory and context server for AI agents over the Model Context Protocol (MCP).
 
@@ -13,6 +13,7 @@ This repository implements **MindGate MCP (`mindgate-mcp`)**, a local-first pers
 2. **During Development (`remember_decision`, `update_memory`, `deprecate_memory` & `recall_context`):**
    - When making a non-trivial architectural decision, fixing a subtle bug, or learning a user preference, call `remember_decision` with an appropriate `category` (`architecture`, `decision`, `bugfix`, `convention`, `context`).
    - **Decision Lifecycle & Superseding:** When a new decision overrides or replaces an older one, pass `supersedes: [<old_memory_id>]` to `remember_decision`. The older decision is automatically marked as `superseded` and will no longer pollute active context. Alternatively, call `deprecate_memory` with a reason.
+  - **Assumptions Ledger:** When recording a claim about the world that can go stale (a vendor limit, a version, a business rule), use `record_assumption` with an `owner` and a `review_date` (defaults to 30 days). An assumption whose review date has passed is **excluded** from `recall_context` and appears only under `assumptions_needing_review` — never act on it silently. At session start, call `review_assumptions` to see what is overdue and what is due within 7 days, then `confirm_assumption` to extend the review date (`confirm`) or replace it with a corrected record (`replace`, which supersedes the old one).
    - **Never paste secrets** (API keys, tokens, PEM blocks) into memories. Known token patterns are redacted on write (`[REDACTED:<kind>]`) as a safety net, but keep secrets out of memories entirely. `MINDGATE_REDACT_SECRETS=false` disables the safety net.
    - When an existing decision or convention evolves without replacement, call `update_memory` with its `id` so the record is updated in place without losing identity or `created_at`.
    - Before proposing a major refactor, call `recall_context` to verify whether prior constraints or decisions exist.
