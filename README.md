@@ -1,10 +1,10 @@
-# 🧠 MindGate MCP (`v1.5.0`) — بوابة العقل
+# 🧠 MindGate MCP (`v1.6.0`) — بوابة العقل
 
 [![npm version](https://img.shields.io/npm/v/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/mindgate-mcp.svg)](https://www.npmjs.com/package/mindgate-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](./LICENSE)
 [![Security: Node2Shell Hardened](https://img.shields.io/badge/Security-Node2Shell%20Hardened-06b6d4.svg)](./SECURITY.md)
-[![Version: 1.5.0](https://img.shields.io/badge/MCP-v1.5.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
+[![Version: 1.6.0](https://img.shields.io/badge/MCP-v1.6.0-8b5cf6.svg)](https://github.com/aaserag1/mindgate-mcp)
 
 **Stop re-explaining your codebase every morning.**  
 A **100% local-first persistent memory MCP server** for **Cursor**, **Claude Desktop**, **Antigravity**, **Windsurf**, and **Codex** — backed by SQLite + FTS5, automatic secret redaction, and auto-compiled `AGENTS.md` / `.cursorrules` / `CLAUDE.md` rules.
@@ -91,6 +91,7 @@ npm run init-config
 * **🔄 Auto-Compiled Workspace Rules:** `sync_workspace_rules` compiles stored decisions into `AGENTS.md`, `.cursorrules`, `CLAUDE.md`, `.windsurfrules`, or `MINDGATE_CONTEXT.md`. Writes are atomic, existing files get a `.bak-<timestamp>` backup, and hand-written files are never overwritten unless `force: true`.
 * **🔒 Secret Redaction on Write:** Well-known token patterns (OpenAI, GitHub, AWS, Slack, Google, JWT, PEM private keys) are masked with `[REDACTED:<kind>]` before touching disk. Disable with `MINDGATE_REDACT_SECRETS=false` (not recommended).
 * **🔄 Decision Lifecycle & Compaction:** Supersede outdated choices (`supersedes`), deprecate stale notes (`deprecate_memory`), update in-place (`update_memory`), and compact long session histories (`compact_memories`) to save tokens.
+* **📒 Assumptions Ledger (`v1.6.0`):** Dated, owned assumption records (`record_assumption`) with a `review_date` and an `owner`. An assumption whose review date has passed is excluded from `recall_context` and listed only under `assumptions_needing_review` until the operator confirms (`confirm_assumption`) or replaces it — so a stale assumption can never be silently reused. `review_assumptions` lists what is overdue and what is due within 7 days.
 * **🔍 Optional Hybrid Semantic & Arabic ↔ English Search (`v1.4.0`–`v1.5.0`):** Combines BM25 with offline ONNX embeddings (`all-MiniLM-L6-v2`, ~23 MB, 384-dim) and a `multilingual` profile (`mindgate-mcp download-model --multilingual`) for >0.72 cosine alignment between Arabic queries and English decisions on CPU.
 * **🖥️ Built-in Local Web Dashboard:** Zero-dependency UI (`mindgate-mcp ui`) bound strictly to `127.0.0.1:4242` with Dark/Light themes, Arabic RTL & English LTR switch, live search, and JSON export.
 * **🪝 Git Post-Commit Hook:** Automatically logs commit messages and active files via `mindgate-mcp git-hook install` without blocking your workflow.
@@ -126,12 +127,12 @@ Appends a non-blocking background hook bounded by `# --- mindgate:post-commit --
 
 ---
 
-## 🛠️ MCP Tools (13), Resources (2) & Prompts (1)
+## 🛠️ MCP Tools (16), Resources (2) & Prompts (1)
 
 <details>
-<summary>Expand full list of 13 MCP Tools, 2 Resources, and 1 Prompt</summary>
+<summary>Expand full list of 16 MCP Tools, 2 Resources, and 1 Prompt</summary>
 
-### Tools (13)
+### Tools (16)
 
 | Tool Name | Description |
 | :--- | :--- |
@@ -139,6 +140,9 @@ Appends a non-blocking background hook bounded by `# --- mindgate:post-commit --
 | `update_memory` | Update an existing memory in-place by ID (and optional `status`) while keeping FTS5 indexes in sync |
 | `recall_context` | Search memories with FTS5 BM25 (and hybrid embeddings when available), workspace/category/status filters; falls back to recent memories (`search.fallback: true`) |
 | `deprecate_memory` | Mark a memory as deprecated by ID with an optional reason without deleting history |
+| `record_assumption` | Record a dated, owned assumption (`review_date`, `owner`) in the ledger; defaults to a 30-day review window |
+| `review_assumptions` | List overdue assumptions (oldest first) and the count due within 7 days |
+| `confirm_assumption` | Confirm an assumption (extend its review date) or replace it with a superseding record |
 | `compact_memories` | Compact historical session handoffs into milestone summaries to reduce token usage |
 | `log_session_summary` | Save a structured session handoff (summary, next steps, active files) for the next agent |
 | `get_dashboard_url` | Return the local MindGate Web Dashboard URL (`http://127.0.0.1:4242`) |
@@ -242,11 +246,11 @@ If `npm ci` fails with `EPERM ... better-sqlite3\prebuilds\win32-x64.node`, a ru
 
 ```bash
 npm run typecheck   # TypeScript --noEmit
-npm test            # 29 tests (real SQLite + FTS5)
+npm test            # 65 tests (real SQLite + FTS5)
 npm run build       # emit dist/
 ```
 
-All 29 tests pass on Linux; on Windows 28 pass + 1 skipped (POSIX `chmod` is unsupported).
+All 65 tests pass on Linux.
 
 ---
 

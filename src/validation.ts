@@ -22,6 +22,7 @@ export const LIMITS = {
   summaryMax: 20_000,
   workspaceMax: 200,
   sourceAgentMax: 200,
+  ownerMax: 200,
   tagMax: 100,
   tagsMax: 20,
   nextStepsMax: 50,
@@ -38,6 +39,7 @@ const CATEGORIES: ReadonlySet<string> = new Set([
   "bugfix",
   "convention",
   "context",
+  "assumption",
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -147,6 +149,35 @@ export function optionalCategory(value: unknown): MemoryCategory | undefined {
     );
   }
   return value as MemoryCategory;
+}
+
+/**
+ * Validate an assumption review date: strict ISO calendar date (YYYY-MM-DD).
+ * Rejects malformed strings and impossible dates (e.g. 2026-02-30).
+ */
+export function optionalReviewDate(value: unknown, field = "review_date"): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new ToolInputError(`Field "${field}" must be an ISO date (YYYY-MM-DD).`);
+  }
+  const [y, m, d] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(y, m - 1, d));
+  if (
+    parsed.getUTCFullYear() !== y ||
+    parsed.getUTCMonth() !== m - 1 ||
+    parsed.getUTCDate() !== d
+  ) {
+    throw new ToolInputError(`Field "${field}" is not a real calendar date: "${value}".`);
+  }
+  return value;
+}
+
+/** Validate the confirm_assumption action: "confirm" or "replace". */
+export function requiredConfirmAction(value: unknown): "confirm" | "replace" {
+  if (value !== "confirm" && value !== "replace") {
+    throw new ToolInputError('Field "action" must be "confirm" or "replace".');
+  }
+  return value;
 }
 
 const MEMORY_STATUSES: ReadonlySet<string> = new Set([
